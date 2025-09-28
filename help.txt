@@ -1,0 +1,27 @@
+Kiểm tra thay đổi trong repo cục bộ:
+git status
+
+Thêm các thay đổi vào staging:
+git add .
+
+Commit code mới:
+git commit -m "Cập nhật code mới: [Mô tả ngắn gọn]"
+
+
+Kéo code từ repo từ xa (để tránh xung đột):
+git pull origin main --rebase
+
+Đẩy code mới lên repo từ xa:
+git push origin main
+
+//Bo het va keo ve
+git reset --hard
+git pull origin main --rebase
+
+//Lấy danh sách commit
+git log                           // Hiển thị đầy đủ thông tin commit
+git log --oneline                 // Hiển thị mỗi commit trên một dòng
+git log --author="tên_tác_giả"    // Lọc commit theo tác giả
+git log --since="2023-01-01"      // Lọc commit từ ngày cụ thể
+git log -n 10                     // Hiển thị 10 commit gần nhất
+git log --graph --oneline --all   // Hiển thị đồ thị commit với các nhánh
