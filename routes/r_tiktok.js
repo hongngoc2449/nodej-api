@@ -36,7 +36,9 @@ function generateSha256(path, queries, secret) {
   });
 
   const sortedKeys = Object.keys(filteredQueries).sort();
-  const concatenatedParams = sortedKeys.map((key) => key + filteredQueries[key]).join("");
+  const concatenatedParams = sortedKeys
+    .map((key) => key + filteredQueries[key])
+    .join("");
   let inputStr = path + concatenatedParams;
   inputStr = secret + inputStr + secret;
 
@@ -155,7 +157,11 @@ async function teleMess(order_id, accessToken, appKey, appSecret) {
   const sub_total = idata.payment_info.sub_total;
   const original_total = idata.payment_info.original_total_product_price;
   const seller_discount = idata.payment_info.seller_discount;
-  const total = (original_total - seller_discount - (original_total * 6.1) / 100).toFixed(2);
+  const total = (
+    original_total -
+    seller_discount -
+    (original_total * 6.1) / 100
+  ).toFixed(2);
 
   let message = "";
   let i = 0;
@@ -181,7 +187,9 @@ router.get("/resfresh-token", async (req, res) => {
     }
 
     if (!ishop) {
-      return res.status(404).json({ error: "Shop not found with this access token" });
+      return res
+        .status(404)
+        .json({ error: "Shop not found with this access token" });
     }
 
     console.log(`Refreshing token for shop: ${ishop.shop_name}`);
@@ -216,7 +224,8 @@ router.get("/add-tts-api", async (req, res) => {
 
   const appKey = "6eklpv48sqatl";
   const appSecret = "628681247a794cce5529bf3d690ee56c715b9b9c";
-  const shareLink = "https://services.tiktokshops.us/open/authorize?service_id=7445208722014930734";
+  const shareLink =
+    "https://services.tiktokshops.us/open/authorize?service_id=7445208722014930734";
   try {
     console.log(req.query);
     const authorization_code = req.query.code;
@@ -224,11 +233,19 @@ router.get("/add-tts-api", async (req, res) => {
       return res.status(401).send("Unauthorized");
     }
     console.log("authorization_code: ", authorization_code);
-    const { access_token, refresh_token } = await getAccessToken(authorization_code, appKey, appSecret);
+    const { access_token, refresh_token } = await getAccessToken(
+      authorization_code,
+      appKey,
+      appSecret
+    );
 
     console.log("access_token", access_token);
     console.log("refresh_token", refresh_token);
-    const { shop_id, shop_code, shop_name, cipher } = await getCipher(access_token, appKey, appSecret);
+    const { shop_id, shop_code, shop_name, cipher } = await getCipher(
+      access_token,
+      appKey,
+      appSecret
+    );
     console.log("abc: ", shop_id, shop_code, shop_name, cipher);
 
     const ishop = await shop.findOneAndUpdate(
@@ -265,13 +282,27 @@ router.get("/add-tts-api-new", (req, res) => {
 router.post("/add-tts-api-new", async (req, res) => {
   try {
     const { authorization_code, appKey, appSecret, shareLink } = req.body;
-    console.log("Input data: ", authorization_code, appKey, appSecret, shareLink);
+    console.log(
+      "Input data: ",
+      authorization_code,
+      appKey,
+      appSecret,
+      shareLink
+    );
 
-    const { access_token, refresh_token } = await getAccessToken(authorization_code, appKey, appSecret);
+    const { access_token, refresh_token } = await getAccessToken(
+      authorization_code,
+      appKey,
+      appSecret
+    );
 
     console.log("access_token", access_token);
     console.log("refresh_token", refresh_token);
-    const { shop_id, shop_code, shop_name, cipher } = await getCipher(access_token, appKey, appSecret);
+    const { shop_id, shop_code, shop_name, cipher } = await getCipher(
+      access_token,
+      appKey,
+      appSecret
+    );
 
     const ishop = await shop.findOneAndUpdate(
       { shop_name: shop_name }, // Điều kiện tìm kiếm
@@ -381,7 +412,9 @@ async function refreshTokenForShop(shopDoc) {
     shopDoc.refresh_token = newRefreshToken;
     await shopDoc.save();
 
-    console.log(`✅ Token refreshed successfully for shop: ${shopDoc.shop_name}`);
+    console.log(
+      `✅ Token refreshed successfully for shop: ${shopDoc.shop_name}`
+    );
     return newAccessToken;
   } catch (error) {
     console.error(`❌ Token refresh failed:`, error);
