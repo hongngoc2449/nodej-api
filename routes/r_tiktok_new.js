@@ -33,7 +33,9 @@ function generateSha256(path, queries, secret, body = null) {
 }
 
 async function getShopData(shopName = "Baby%20Stafaz") {
-  const jsonData = await fetch("https://ff.stafaz.com/get-tts?shopName=" + shopName);
+  const jsonData = await fetch(
+    "https://ff.stafaz.com/get-tts?shopName=" + shopName
+  );
   const data_shop = await jsonData.json();
   const shopData = data_shop[0];
 
@@ -49,10 +51,13 @@ async function getShopData(shopName = "Baby%20Stafaz") {
  * Lấy thông tin chi tiết đơn hàng từ TikTok Shop API
  */
 async function getOrderDetail(orderIds, shopName = "Baby%20Stafaz") {
-  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(shopName);
+  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(
+    shopName
+  );
   try {
     const ids = Array.isArray(orderIds) ? orderIds : [orderIds];
-    if (ids.length > 50) throw new Error("Maximum 50 order IDs allowed per request");
+    if (ids.length > 50)
+      throw new Error("Maximum 50 order IDs allowed per request");
 
     const timestamp = Math.floor(Date.now() / 1000);
     const path = "/order/202507/orders";
@@ -74,22 +79,29 @@ async function getOrderDetail(orderIds, shopName = "Baby%20Stafaz") {
       version: "202507",
     });
 
-    const response = await fetch(`https://open-api.tiktokglobalshop.com${path}?${queryParams}`, {
-      method: "GET",
-      headers: {
-        "content-type": "application/json",
-        "x-tts-access-token": accessToken,
-      },
-    });
+    const response = await fetch(
+      `https://open-api.tiktokglobalshop.com${path}?${queryParams}`,
+      {
+        method: "GET",
+        headers: {
+          "content-type": "application/json",
+          "x-tts-access-token": accessToken,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const data = await response.json();
     if (data.code !== 0) {
-      throw new Error(`API error: ${data.message || "Unknown error"}, code: ${data.code}`);
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
     }
 
     return {
@@ -108,12 +120,21 @@ async function getOrderDetail(orderIds, shopName = "Baby%20Stafaz") {
 /**
  * Lấy danh sách đơn hàng từ TikTok Shop API
  */
-async function getOrderList(shopName = "Baby%20Stafaz", order_status = "AWAITING_SHIPMENT") {
-  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(shopName);
+async function getOrderList(
+  shopName = "Baby%20Stafaz",
+  order_status = "AWAITING_SHIPMENT",
+  page_token = null,
+  page_size = 20
+) {
+  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(
+    shopName
+  );
 
   try {
     if (!appKey || !appSecret || !accessToken || !shopCipher || !order_status) {
-      throw new Error("Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, order_status");
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, order_status"
+      );
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -123,8 +144,9 @@ async function getOrderList(shopName = "Baby%20Stafaz", order_status = "AWAITING
       app_key: appKey,
       timestamp,
       shop_cipher: shopCipher,
-      page_size: 100,
+      page_size: page_size,
       order_status: order_status,
+      ...(page_token && { page_token: page_token }),
     };
 
     const sign = generateSha256(path, queries, appSecret);
@@ -136,22 +158,29 @@ async function getOrderList(shopName = "Baby%20Stafaz", order_status = "AWAITING
     });
     queryParams.append("sign", sign);
 
-    const response = await fetch(`https://open-api.tiktokglobalshop.com${path}?${queryParams}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-tts-access-token": accessToken,
-      },
-    });
+    const response = await fetch(
+      `https://open-api.tiktokglobalshop.com${path}?${queryParams}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-tts-access-token": accessToken,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const data = await response.json();
     if (data.code !== 0) {
-      throw new Error(`API error: ${data.message || "Unknown error"}, code: ${data.code}`);
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
     }
 
     return {
@@ -168,6 +197,85 @@ async function getOrderList(shopName = "Baby%20Stafaz", order_status = "AWAITING
 }
 
 /**
+ * Lấy danh sách finance statements từ TikTok Shop API
+ * Yêu cầu tối thiểu các query: app_key, sort_field(statement_time), sign, timestamp, shop_cipher
+ */
+async function getStatement(
+  shopName = "Baby%20Stafaz",
+  { sort_field = "statement_time", page_size, page_token } = {}
+) {
+  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(
+    shopName
+  );
+
+  try {
+    if (!appKey || !appSecret || !accessToken || !shopCipher) {
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher"
+      );
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const path = "/finance/202309/statements";
+
+    // Tạo queries object với các tham số yêu cầu
+    const queries = {
+      app_key: appKey,
+      timestamp,
+      shop_cipher: shopCipher,
+      sort_field,
+    };
+
+    if (page_size) queries.page_size = page_size;
+    if (page_token) queries.page_token = page_token;
+
+    const sign = generateSha256(path, queries, appSecret);
+
+    // Tạo query params
+    const queryParams = new URLSearchParams();
+    Object.entries(queries).forEach(([key, value]) => {
+      queryParams.append(key, value.toString());
+    });
+    queryParams.append("sign", sign);
+
+    const url = `https://open-api.tiktokglobalshop.com${path}?${queryParams}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "content-type": "application/json",
+        "x-tts-access-token": accessToken,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    if (data.code !== 0) {
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
+    }
+
+    return {
+      success: true,
+      data: data.data,
+      request_id: data.request_id,
+      code: data.code,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error("Error fetching finance statements:", error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
  * Tạo package (shipping label) cho đơn hàng TikTok Shop
  */
 async function createPackage(params) {
@@ -176,7 +284,9 @@ async function createPackage(params) {
 
   try {
     if (!appKey || !appSecret || !accessToken || !shopCipher || !orderId) {
-      throw new Error("Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId");
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId"
+      );
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -231,12 +341,16 @@ async function createPackage(params) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const data = await response.json();
     if (data.code !== 0) {
-      throw new Error(`API error: ${data.message || "Unknown error"}, code: ${data.code}`);
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
     }
 
     return {
@@ -257,11 +371,18 @@ async function createPackage(params) {
  */
 async function getShipLabel(params) {
   const { appKey, appSecret, shopCipher, accessToken } = await getShopData();
-  const { packageId, documentType = "SHIPPING_LABEL_PDF", documentSize, documentFormat } = params;
+  const {
+    packageId,
+    documentType = "SHIPPING_LABEL",
+    documentSize,
+    documentFormat,
+  } = params;
 
   try {
     if (!appKey || !appSecret || !accessToken || !shopCipher || !packageId) {
-      throw new Error("Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, packageId");
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, packageId"
+      );
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -303,12 +424,16 @@ async function getShipLabel(params) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const data = await response.json();
     if (data.code !== 0) {
-      throw new Error(`API error: ${data.message || "Unknown error"}, code: ${data.code}`);
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
     }
 
     return {
@@ -324,6 +449,164 @@ async function getShipLabel(params) {
   }
 }
 
+/**
+ * Lấy thông tin tracking của đơn hàng từ TikTok Shop API
+ * Required: order_id và các query parameters: app_key, sign, timestamp, shop_cipher
+ */
+async function getOrderTracking(orderId, shopName = "Baby%20Stafaz") {
+  const { appKey, appSecret, shopCipher, accessToken } = await getShopData(
+    shopName
+  );
+
+  try {
+    if (!appKey || !appSecret || !accessToken || !shopCipher || !orderId) {
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId"
+      );
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const path = `/fulfillment/202309/orders/${orderId}/tracking`;
+
+    // Tạo queries object với các tham số yêu cầu
+    const queries = {
+      app_key: appKey,
+      timestamp,
+      shop_cipher: shopCipher,
+    };
+
+    const sign = generateSha256(path, queries, appSecret);
+
+    // Tạo query params
+    const queryParams = new URLSearchParams();
+    Object.entries(queries).forEach(([key, value]) => {
+      queryParams.append(key, value.toString());
+    });
+    queryParams.append("sign", sign);
+
+    const url = `https://open-api.tiktokglobalshop.com${path}?${queryParams}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "content-type": "application/json",
+        "x-tts-access-token": accessToken,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    if (data.code !== 0) {
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
+    }
+
+    return {
+      success: true,
+      data: data.data,
+      request_id: data.request_id,
+      code: data.code,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error("Error fetching order tracking:", error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
+/**
+ * Đánh dấu package là đã gửi (Mark Package As Shipped)
+ * Dùng cho hình thức tự vận chuyển: cần shipping_provider_id, tracking_number, và order_line_item_ids.
+ */
+async function markPackAsShip(params) {
+  const { appKey, appSecret, shopCipher, accessToken } = await getShopData();
+  const { orderId, trackingNumber, shippingProviderId } = params;
+
+  try {
+    if (
+      !appKey ||
+      !appSecret ||
+      !accessToken ||
+      !shopCipher ||
+      !orderId ||
+      !shippingProviderId ||
+      !trackingNumber
+    ) {
+      throw new Error(
+        "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId, shippingProviderId, trackingNumber"
+      );
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    // Path theo spec: /fulfillment/202309/orders/{order_id}/packages
+    const path = `/fulfillment/202309/orders/${orderId}/packages`;
+
+    // Query parameters theo spec
+    const queries = {
+      app_key: appKey,
+      timestamp,
+      shop_cipher: shopCipher,
+    };
+
+    // Body parameters theo spec
+    const bodyData = {
+      tracking_number: trackingNumber,
+      shipping_provider_id: shippingProviderId,
+    };
+
+    const sign = generateSha256(path, queries, appSecret, bodyData);
+
+    const queryParams = new URLSearchParams();
+    Object.entries(queries).forEach(([key, value]) => {
+      queryParams.append(key, value.toString());
+    });
+    queryParams.append("sign", sign);
+
+    const url = `https://open-api.tiktokglobalshop.com${path}?${queryParams}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-tts-access-token": accessToken,
+      },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    if (data.code !== 0) {
+      throw new Error(
+        `API error: ${data.message || "Unknown error"}, code: ${data.code}`
+      );
+    }
+
+    return {
+      success: true,
+      data: data.data,
+      request_id: data.request_id,
+      code: data.code,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error("Error marking package as shipped:", error);
+    return { success: false, error: error.message, data: null };
+  }
+}
+
 // Order detail endpoint
 //http://localhost:3000/order-detail?orderIds=1234567890
 router.get("/order-detail", async (req, res) => {
@@ -333,7 +616,8 @@ router.get("/order-detail", async (req, res) => {
     if (!orderIds) {
       return res.status(400).json({
         success: false,
-        error: "Thiếu tham số bắt buộc: orderIds, appKey, appSecret, shopCipher và x-tts-access-token header",
+        error:
+          "Thiếu tham số bắt buộc: orderIds, appKey, appSecret, shopCipher và x-tts-access-token header",
       });
     }
 
@@ -362,8 +646,18 @@ router.get("/order-detail", async (req, res) => {
 //http://localhost:3000/order-list?shopName=Baby%20Stafaz&order_status=AWAITING_SHIPMENT
 router.get("/order-list", async (req, res) => {
   try {
-    const { shopName = "Baby%20Stafaz", order_status = "AWAITING_SHIPMENT" } = req.query;
-    const result = await getOrderList(shopName, order_status);
+    const {
+      shopName = "Baby%20Stafaz",
+      order_status = "AWAITING_SHIPMENT",
+      page_token = null,
+      page_size = 20,
+    } = req.query;
+    const result = await getOrderList(
+      shopName,
+      order_status,
+      page_token,
+      parseInt(page_size)
+    );
 
     if (result.success) {
       res.json({
@@ -384,16 +678,94 @@ router.get("/order-list", async (req, res) => {
   }
 });
 
+// Finance statements endpoint
+// Ví dụ: GET /finance-statements?shopName=Baby%20Stafaz&sort_field=statement_time&page_size=20
+router.get("/finance-statements", async (req, res) => {
+  try {
+    const {
+      shopName = "Baby%20Stafaz",
+      sort_field = "statement_time",
+      page_size,
+      page_token,
+    } = req.query;
+    const result = await getStatement(shopName, {
+      sort_field,
+      page_size: page_size ? parseInt(page_size) : undefined,
+      page_token,
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: "Lấy finance statements thành công",
+        ...result,
+      });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error("Finance statements route error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+});
+
+// Order tracking endpoint
+// Ví dụ: GET /order-tracking?orderId=1234567890&shopName=Baby%20Stafaz
+router.get("/order-tracking", async (req, res) => {
+  try {
+    const { orderId, shopName = "Baby%20Stafaz" } = req.query;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        error: "Thiếu tham số bắt buộc: orderId",
+      });
+    }
+
+    const result = await getOrderTracking(orderId, shopName);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: "Lấy thông tin tracking đơn hàng thành công",
+        ...result,
+      });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error("Order tracking route error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+});
+
 // Create package endpoint
 router.post("/create-package", async (req, res) => {
   try {
-    const { appKey, appSecret, shopCipher, orderId, dimension, weight, shippingServiceId } = req.body;
+    const {
+      appKey,
+      appSecret,
+      shopCipher,
+      orderId,
+      dimension,
+      weight,
+      shippingServiceId,
+    } = req.body;
     const accessToken = req.headers["x-tts-access-token"];
 
     if (!appKey || !appSecret || !accessToken || !shopCipher || !orderId) {
       return res.status(400).json({
         success: false,
-        error: "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId",
+        error:
+          "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId",
       });
     }
 
@@ -430,13 +802,22 @@ router.post("/create-package", async (req, res) => {
 // Get ship label endpoint
 router.get("/ship-label", async (req, res) => {
   try {
-    const { appKey, appSecret, shopCipher, packageId, documentType, documentSize, documentFormat } = req.query;
+    const {
+      appKey,
+      appSecret,
+      shopCipher,
+      packageId,
+      documentType,
+      documentSize,
+      documentFormat,
+    } = req.query;
     const accessToken = req.headers["x-tts-access-token"];
 
     if (!appKey || !appSecret || !accessToken || !shopCipher || !packageId) {
       return res.status(400).json({
         success: false,
-        error: "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, packageId",
+        error:
+          "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, packageId",
       });
     }
 
@@ -462,6 +843,64 @@ router.get("/ship-label", async (req, res) => {
     }
   } catch (error) {
     console.error("Get ship label route error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+});
+
+// Mark package as shipped endpoint
+router.post("/mark-package-as-shipped", async (req, res) => {
+  try {
+    const {
+      appKey,
+      appSecret,
+      shopCipher,
+      orderId,
+      shippingProviderId,
+      trackingNumber,
+    } = req.body;
+    const accessToken = req.headers["x-tts-access-token"];
+
+    if (
+      !appKey ||
+      !appSecret ||
+      !accessToken ||
+      !shopCipher ||
+      !orderId ||
+      !shippingProviderId ||
+      !trackingNumber
+    ) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Thiếu tham số bắt buộc: appKey, appSecret, accessToken, shopCipher, orderId, shippingProviderId, trackingNumber",
+      });
+    }
+
+    const result = await markPackAsShip({
+      appKey,
+      appSecret,
+      accessToken,
+      shopCipher,
+      orderId,
+      shippingProviderId,
+      trackingNumber,
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: "Đánh dấu shipped thành công",
+        ...result,
+      });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error("Mark package shipped route error:", error);
     res.status(500).json({
       success: false,
       error: "Internal Server Error",
