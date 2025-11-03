@@ -174,6 +174,45 @@ document.addEventListener("DOMContentLoaded", function () {
     exportImageBtn.addEventListener("click", exportImage);
   }
 
+  // Handle inline spacing controls: update display and live preview
+  (function initInlineSpacingControls() {
+    const characterSpacingInput = document.getElementById(
+      "characterSpacingInput"
+    );
+    const wordSpacingInput = document.getElementById("wordSpacingInput");
+    const characterSpacingValue = document.getElementById(
+      "characterSpacingValue"
+    );
+    const wordSpacingValue = document.getElementById("wordSpacingValue");
+
+    const debouncedRefresh = debounce(refreshUI, 180);
+
+    const updateValues = () => {
+      if (characterSpacingInput && characterSpacingValue) {
+        characterSpacingValue.textContent = characterSpacingInput.value;
+      }
+      if (wordSpacingInput && wordSpacingValue) {
+        wordSpacingValue.textContent = wordSpacingInput.value;
+      }
+    };
+
+    if (characterSpacingInput) {
+      characterSpacingInput.addEventListener("input", () => {
+        updateValues();
+        debouncedRefresh();
+      });
+    }
+    if (wordSpacingInput) {
+      wordSpacingInput.addEventListener("input", () => {
+        updateValues();
+        debouncedRefresh();
+      });
+    }
+
+    // Initialize displayed values on load
+    updateValues();
+  })();
+
   // Initialize export handlers
   if (typeof initExportHandlers === "function") {
     initExportHandlers();

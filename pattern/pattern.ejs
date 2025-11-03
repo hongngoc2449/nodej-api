@@ -76,6 +76,101 @@
           </button>
         </div>
         <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 10px;
+          "
+        >
+          <div>
+            <label
+              for="characterSpacingInput"
+              style="
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 600;
+                color: #333;
+              "
+            >
+              Khoảng cách giữa các ký tự:
+              <span
+                id="characterSpacingValue"
+                style="color: #667eea; font-weight: 700; font-size: 14px"
+                >0</span
+              >
+            </label>
+            <input
+              type="range"
+              id="characterSpacingInput"
+              min="0"
+              max="200"
+              value="0"
+              step="1"
+              style="
+                width: 100%;
+                height: 8px;
+                cursor: pointer;
+                accent-color: #667eea;
+              "
+            />
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                margin-top: 5px;
+                font-size: 11px;
+                color: #999;
+              "
+            >
+              <span>0(sát nhau)</span><span>100</span><span>200</span>
+            </div>
+          </div>
+          <div>
+            <label
+              for="wordSpacingInput"
+              style="
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 600;
+                color: #333;
+              "
+            >
+              Khoảng cách giữa các từ:
+              <span
+                id="wordSpacingValue"
+                style="color: #667eea; font-weight: 700; font-size: 14px"
+                >40</span
+              >
+            </label>
+            <input
+              type="range"
+              id="wordSpacingInput"
+              min="0"
+              max="200"
+              value="20"
+              step="1"
+              style="
+                width: 100%;
+                height: 8px;
+                cursor: pointer;
+                accent-color: #667eea;
+              "
+            />
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                margin-top: 5px;
+                font-size: 11px;
+                color: #999;
+              "
+            >
+              <span>0(sát nhau)</span><span>100</span><span>200</span>
+            </div>
+          </div>
+        </div>
+        <div
           class="result-images-inline"
           style="max-height: 150px; overflow-y: auto"
         >
@@ -180,144 +275,6 @@
       <% } %>
     </div>
 
-    <!-- Export Preview Modal -->
-    <div class="modal-overlay" id="exportPreviewModal">
-      <div class="modal-content" style="max-width: 900px">
-        <div class="modal-header">
-          <h2>Preview hình ảnh xuất</h2>
-          <button class="modal-close" id="closeExportPreviewBtn">
-            &times;
-          </button>
-        </div>
-        <div style="padding: 20px">
-          <div
-            style="
-              text-align: center;
-              margin-bottom: 20px;
-              background: white;
-              padding: 20px;
-              border-radius: 8px;
-              border: 1px solid #ddd;
-              overflow: auto;
-            "
-          >
-            <canvas
-              id="exportPreviewCanvas"
-              style="max-width: 100%; height: auto; border: 1px solid #eee"
-            ></canvas>
-          </div>
-
-          <div style="margin-bottom: 20px">
-            <label
-              for="characterSpacingInput"
-              style="
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #333;
-              "
-            >
-              Khoảng cách giữa các ký tự:
-              <span
-                id="characterSpacingValue"
-                style="color: #667eea; font-weight: 700; font-size: 16px"
-                >0</span
-              >
-            </label>
-            <input
-              type="range"
-              id="characterSpacingInput"
-              min="0"
-              max="1000"
-              value="0"
-              step="10"
-              style="
-                width: 100%;
-                height: 8px;
-                cursor: pointer;
-                accent-color: #667eea;
-              "
-            />
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                margin-top: 5px;
-                font-size: 11px;
-                color: #999;
-              "
-            >
-              <span>0(sát nhau)</span>
-              <span>500</span>
-              <span>1000</span>
-            </div>
-          </div>
-
-          <div style="margin-bottom: 20px">
-            <label
-              for="wordSpacingInput"
-              style="
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #333;
-              "
-            >
-              Khoảng cách giữa các từ:
-              <span
-                id="wordSpacingValue"
-                style="color: #667eea; font-weight: 700; font-size: 16px"
-                >40</span
-              >
-            </label>
-            <input
-              type="range"
-              id="wordSpacingInput"
-              min="0"
-              max="2000"
-              value="40"
-              step="1"
-              style="
-                width: 100%;
-                height: 8px;
-                cursor: pointer;
-                accent-color: #667eea;
-              "
-            />
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                margin-top: 5px;
-                font-size: 11px;
-                color: #999;
-              "
-            >
-              <span>0(sát nhau)</span>
-              <span>750</span>
-              <span>2000</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="modal-btn modal-btn-secondary"
-            id="cancelExportPreviewBtn"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            class="modal-btn modal-btn-primary"
-            id="saveExportBtn"
-          >
-            💾 Lưu hình ảnh
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- Available Patterns Modal -->
     <div class="modal-overlay" id="availablePatternsModal">
       <div class="modal-content" style="max-width: 800px">
@@ -364,7 +321,7 @@
             />
           </div>
           <div class="modal-form-group">
-            <label>Pattern Preview (Ký tự A của pattern đã lưu):</label>
+            <label>Pattern đã lưu</label>
             <div class="pattern-preview" id="patternPreview">
               <div class="pattern-preview-empty">
                 Chưa có pattern nào đã được lưu.
@@ -372,7 +329,7 @@
             </div>
           </div>
           <div class="modal-form-group">
-            <label for="modalUploadImageInput">Upload Folder Pattern:</label>
+            <label for="modalUploadImageInput">Chọn Folder Pattern:</label>
             <input
               type="file"
               id="modalUploadImageInput"
@@ -383,25 +340,6 @@
               mozdirectory
               style="margin-bottom: 10px"
             />
-            <button
-              type="button"
-              id="modalUploadImageBtn"
-              style="
-                padding: 10px 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 14px;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                width: 100%;
-              "
-            >
-              📤 Upload toàn bộ ảnh
-            </button>
             <div
               id="modalUploadStatus"
               class="hint"
@@ -441,7 +379,7 @@
             </div>
           </div>
           <div class="modal-form-group">
-            <label>Preview Pattern vừa upload:</label>
+            <label>Preview Pattern:</label>
             <div class="pattern-preview" id="uploadPreview">
               <div class="pattern-preview-empty">
                 Chưa có pattern nào được upload. Hãy upload folder pattern để

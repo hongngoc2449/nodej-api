@@ -49,8 +49,28 @@ function listTextPatternFiles() {
   }
 }
 
-// Helper: list available image files from patterns/Set 1
+// Helper: list available image files from Digital Ocean (builtin patterns)
 function listImageFiles() {
+  // Try to load from config file first (Digital Ocean URLs)
+  const configPath = path.join(__dirname, "pattern", "builtin-patterns-config.json");
+  
+  try {
+    if (fs.existsSync(configPath)) {
+      const configData = fs.readFileSync(configPath, "utf8");
+      const config = JSON.parse(configData);
+      
+      // Return images with URLs from Digital Ocean
+      return config.map((item) => ({
+        char: item.char,
+        filename: item.filename,
+        url: item.url, // Digital Ocean URL
+      }));
+    }
+  } catch (err) {
+    console.warn("⚠️ Could not load builtin patterns config, falling back to local files:", err.message);
+  }
+  
+  // Fallback: load from local files if config doesn't exist
   const set1Dir = path.join(__dirname, "patterns", "Set 1");
   const allowed = new Set([".png", ".jpg", ".jpeg", ".gif", ".svg"]);
   try {

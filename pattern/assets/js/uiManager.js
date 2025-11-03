@@ -1,6 +1,20 @@
 // UI management and rendering functions
 
-function renderResultImages(result, originalText) {
+// Cache for cropped+scaled previews to reduce lag
+// key: `${url}|${previewMaxH}` => { dataUrl, width, height }
+const previewImageCache = new Map();
+
+function getCachedPreview(url, previewMaxH) {
+  const key = `${url}|${previewMaxH}`;
+  return previewImageCache.get(key);
+}
+
+function setCachedPreview(url, previewMaxH, value) {
+  const key = `${url}|${previewMaxH}`;
+  previewImageCache.set(key, value);
+}
+
+async function renderResultImages(result, originalText) {
   // Try to find inline result images first (new layout)
   let resultImages = document.querySelector(".result-images-inline");
 
@@ -16,22 +30,68 @@ function renderResultImages(result, originalText) {
 
   const words = groupIntoWords(result);
 
-  resultImages.innerHTML = words
-    .map((word) => {
-      const wordHtml = word
-        .map((item) => {
+  // Read spacing controls (fallback to defaults if missing)
+  const charSpacing = parseInt(
+    document.getElementById("characterSpacingInput")?.value || 0
+  );
+  const wordSpacing = parseInt(
+    document.getElementById("wordSpacingInput")?.value || 40
+  );
+
+  const previewMaxH = 60;
+  const wordHtmlArr = await Promise.all(
+    words.map(async (word) => {
+      const itemsHtml = await Promise.all(
+        word.map(async (item, idx, arr) => {
+          const isLast = idx === arr.length - 1;
+          const marginRight = isLast ? 0 : charSpacing;
           if (item.missing) {
-            return `<div class="result-image" style="background: #fee; border: 1px solid #fcc; line-height: 0; width: 60px; height: 60px; overflow: hidden;"><div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #fcc; color: #c33; font-weight: bold; line-height: 1;">${item.char}</div></div>`;
-          } else {
-            return `<div class="result-image"><img src="${getImageSrc(
-              item
-            )}" alt="${item.char}" /></div>`;
+            return `<div class="result-image" style="background: #fee; border: 1px solid #fcc; line-height: 0; width: 60px; height: 60px; overflow: hidden; margin-right: ${marginRight}px;"><div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #fcc; color: #c33; font-weight: bold; line-height: 1;">${item.char}</div></div>`;
           }
+          // Load image, compute bounds and draw cropped preview at scaled height
+          const url = getImageSrc(item);
+          const cached = getCachedPreview(url, previewMaxH);
+          if (cached) {
+            return `<div class="result-image" style="margin-right: ${marginRight}px; width:${cached.width}px; height:${cached.height}px; display:inline-block; line-height:0;"><img src="${cached.dataUrl}" alt="${item.char}" style="display:block; width:${cached.width}px; height:${cached.height}px;"/></div>`;
+          }
+          const img = await new Promise((res, rej) => {
+            const i = new Image();
+            i.crossOrigin = "anonymous";
+            i.onload = () => res(i);
+            i.onerror = () => rej();
+            i.src = url;
+          }).catch(() => null);
+          if (!img) {
+            return `<div class="result-image" style="margin-right: ${marginRight}px;"><img src="${url}" alt="${item.char}" style="max-height:${previewMaxH}px;"/></div>`;
+          }
+          const bounds = getImageBounds(img);
+          const scale = bounds.height ? previewMaxH / bounds.height : 1;
+          const outW = Math.max(1, Math.round(bounds.width * scale));
+          const outH = Math.max(1, Math.round(bounds.height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = outW;
+          canvas.height = outH;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(
+            img,
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height,
+            0,
+            0,
+            outW,
+            outH
+          );
+          const dataUrl = canvas.toDataURL();
+          setCachedPreview(url, previewMaxH, { dataUrl, width: outW, height: outH });
+          return `<div class="result-image" style="margin-right: ${marginRight}px; width:${outW}px; height:${outH}px; display:inline-block; line-height:0;"><img src="${dataUrl}" alt="${item.char}" style="display:block; width:${outW}px; height:${outH}px;"/></div>`;
         })
-        .join("");
-      return `<div class="word-container">${wordHtml}</div>`;
+      );
+      return `<div class="word-container" style="margin-right: ${wordSpacing}px;">${itemsHtml.join("")}</div>`;
     })
-    .join("");
+  );
+  resultImages.innerHTML = wordHtmlArr.join("");
 
 }
 

@@ -1,6 +1,7 @@
 // Pattern Form Modal Management
 
-let uploadedPatternImages = []; // Store uploaded images with URLs
+let uploadedPatternImages = []; // Store uploaded images with URLs (preview only)
+let pendingPatternFiles = []; // Store file objects for actual upload when saving
 
 // Helper: Sanitize pattern name to folder name
 function sanitizeFolderName(patternName) {
@@ -33,6 +34,7 @@ function openPatternFormModal() {
     // Reset form for new pattern creation
     document.getElementById("patternNameInput").value = "";
     uploadedPatternImages = []; // Reset uploaded images
+    pendingPatternFiles = []; // Reset pending files
 
     // Reset upload section to normal state
     resetUploadSection();
@@ -50,6 +52,19 @@ function closePatternFormModal() {
     // Reset form
     document.getElementById("patternNameInput").value = "";
     uploadedPatternImages = [];
+
+    // Revoke Object URLs before clearing
+    pendingPatternFiles.forEach((item) => {
+      if (item.objectUrl) {
+        try {
+          URL.revokeObjectURL(item.objectUrl);
+        } catch (e) {
+          console.warn("Error revoking URL:", e);
+        }
+      }
+    });
+    pendingPatternFiles = [];
+
     updatePatternPreview();
     updateUploadPreview();
     resetUploadSection();
@@ -64,12 +79,7 @@ function resetUploadSection() {
     modalUploadInput.value = "";
   }
 
-  // Reset upload button
-  const modalUploadBtn = document.getElementById("modalUploadImageBtn");
-  if (modalUploadBtn) {
-    modalUploadBtn.disabled = false;
-    modalUploadBtn.textContent = "📤 Upload toàn bộ ảnh";
-  }
+  // No button needed anymore - removed
 
   // Reset upload status
   const modalUploadStatus = document.getElementById("modalUploadStatus");
@@ -94,8 +104,19 @@ function resetUploadSection() {
     modalProgressText.textContent = "";
   }
 
-  // Clear uploaded images
+  // Clear uploaded images and revoke Object URLs
+  pendingPatternFiles.forEach((item) => {
+    if (item.objectUrl) {
+      try {
+        URL.revokeObjectURL(item.objectUrl);
+      } catch (e) {
+        console.warn("Error revoking URL:", e);
+      }
+    }
+  });
+
   uploadedPatternImages = [];
+  pendingPatternFiles = [];
   updateUploadPreview();
 }
 
@@ -198,7 +219,6 @@ function initPatternFormHandlers() {
   const cancelBtn = document.getElementById("cancelPatternFormBtn");
   const modal = document.getElementById("patternFormModal");
   const form = document.getElementById("patternForm");
-  const modalUploadBtn = document.getElementById("modalUploadImageBtn");
   const modalUploadInput = document.getElementById("modalUploadImageInput");
 
   // Open modal
@@ -274,7 +294,7 @@ function initPatternFormHandlers() {
 
   // Handle form submission
   if (form) {
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       const patternName = document
@@ -292,112 +312,18 @@ function initPatternFormHandlers() {
         return;
       }
 
-      if (uploadedPatternImages.length === 0) {
-        alert("Vui lòng upload ít nhất một ảnh pattern");
+      if (pendingPatternFiles.length === 0) {
+        alert("Vui lòng chọn folder pattern trước khi lưu");
         return;
       }
 
-      // Process and save pattern
-      // Convert uploadedPatternImages to pattern set format
-      const patternImages = uploadedPatternImages.map((img) => ({
-        char: img.char,
-        filename: img.fileName,
-        url: img.url,
-      }));
+      // Disable form during upload
+      const saveBtn = document.getElementById("savePatternBtn");
+      const cancelBtn = document.getElementById("cancelPatternFormBtn");
+      if (saveBtn) saveBtn.disabled = true;
+      if (cancelBtn) cancelBtn.disabled = true;
 
-      // Add to patternSets
-      const id = `uploaded_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 7)}`;
-      patternSets.push({
-        id,
-        name: patternName,
-        source: "uploaded",
-        images: patternImages,
-      });
-
-      // Add to active list automatically
-      activePatternSetIds.add(id);
-
-      // Save to localStorage
-      if (typeof savePatternSetsToStorage === "function") {
-        savePatternSetsToStorage();
-      }
-
-      // Invalidate cache
-      invalidateCharMapForSet(id);
-
-      // Update UI
-      if (typeof rebuildSetsList === "function") rebuildSetsList();
-      if (typeof rebuildImageGrid === "function") rebuildImageGrid();
-      if (typeof rebuildAvailablePatternsList === "function")
-        rebuildAvailablePatternsList();
-
-      // Update order list if rotate mode is on
-      if (rotateMode) {
-        // Update patternSetOrder to match patternSets order (filtered by selected sets)
-        patternSetOrder = patternSets
-          .filter((set) => selectedSetIds.has(set.id))
-          .map((set) => set.id);
-      }
-
-      // Refresh UI
-      const textInput = document.getElementById("text");
-      if (textInput && textInput.value && typeof refreshUI === "function") {
-        refreshUI();
-      }
-
-      // Update pattern preview after saving
-      updatePatternPreview();
-
-      // Reset upload section to normal state
-      resetUploadSection();
-
-      // Close modal and show success
-      closePatternFormModal();
-      alert(`✅ Pattern "${patternName}" đã được lưu thành công!`);
-    });
-  }
-
-  // Handle modal upload
-  if (modalUploadBtn && modalUploadInput) {
-    modalUploadBtn.addEventListener("click", async function () {
-      const files = Array.from(modalUploadInput.files || []);
-      if (!files.length) {
-        alert("Vui lòng chọn thư mục chứa ảnh trước khi upload");
-        return;
-      }
-
-      // Get pattern name for folder
-      const patternNameInput = document.getElementById("patternNameInput");
-      const patternName = patternNameInput ? patternNameInput.value.trim() : "";
-
-      if (!patternName) {
-        alert("Vui lòng nhập tên pattern trước khi upload ảnh");
-        return;
-      }
-
-      // Check if pattern name already exists
-      if (isPatternNameExists(patternName)) {
-        alert("⚠️ Tên pattern này đã được sử dụng! Vui lòng chọn tên khác.");
-        patternNameInput.focus();
-        return;
-      }
-
-      // Sanitize folder name (remove special characters, spaces)
-      const folderName = sanitizeFolderName(patternName);
-
-      // Filter only image files
-      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-
-      if (imageFiles.length === 0) {
-        alert("Không tìm thấy ảnh nào trong thư mục");
-        return;
-      }
-
-      // Show loading
-      modalUploadBtn.disabled = true;
-      modalUploadBtn.textContent = `⏳ Đang upload ${imageFiles.length} ảnh...`;
+      // Show upload progress
       const modalUploadStatus = document.getElementById("modalUploadStatus");
       const modalUploadProgress = document.getElementById(
         "modalUploadProgress"
@@ -407,78 +333,254 @@ function initPatternFormHandlers() {
 
       if (modalUploadStatus) {
         modalUploadStatus.style.display = "block";
-        modalUploadStatus.textContent = `Đang upload ${imageFiles.length} ảnh...`;
+        modalUploadStatus.textContent = `Đang upload ${pendingPatternFiles.length} ảnh lên server...`;
         modalUploadStatus.style.color = "#666";
       }
       if (modalUploadProgress) modalUploadProgress.style.display = "block";
       if (modalProgressBar) modalProgressBar.style.width = "0%";
       if (modalProgressText)
-        modalProgressText.textContent = `0 / ${imageFiles.length}`;
+        modalProgressText.textContent = `0 / ${pendingPatternFiles.length}`;
 
-      const newUploadedImages = [];
+      // Sanitize folder name - format: /pattern/tên bộ pattern
+      const sanitized = sanitizeFolderName(patternName);
+      const folderName = `pattern/${sanitized}`;
+
+      // Upload all files to Digital Ocean
+      const uploadedUrls = [];
       let successCount = 0;
       let failCount = 0;
 
-      // Upload all files
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        try {
-          const imageUrl = await uploadImage(file, folderName);
-          if (imageUrl) {
-            // Extract character from filename
-            const name = file.name || "";
-            const base = name.replace(/\.[^.]+$/, "");
-            const ch = (base[0] || "").toUpperCase();
-
-            newUploadedImages.push({
-              char: ch,
-              fileName: file.name,
-              url: imageUrl,
-              preview: imageUrl,
-              success: true,
-            });
-            successCount++;
-          } else {
+      try {
+        for (let i = 0; i < pendingPatternFiles.length; i++) {
+          const item = pendingPatternFiles[i];
+          try {
+            const imageUrl = await uploadImage(item.file, folderName);
+            if (imageUrl) {
+              uploadedUrls.push({
+                char: item.char,
+                fileName: item.file.name,
+                url: imageUrl,
+              });
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } catch (error) {
+            console.error("Upload error for", item.file.name, ":", error);
             failCount++;
           }
-        } catch (error) {
-          console.error("Upload error for", file.name, ":", error);
-          failCount++;
+
+          // Update progress
+          const progress = ((i + 1) / pendingPatternFiles.length) * 100;
+          if (modalProgressBar) modalProgressBar.style.width = progress + "%";
+          if (modalProgressText)
+            modalProgressText.textContent = `${i + 1} / ${
+              pendingPatternFiles.length
+            }`;
         }
 
-        // Update progress
-        const progress = ((i + 1) / imageFiles.length) * 100;
-        if (modalProgressBar) modalProgressBar.style.width = progress + "%";
-        if (modalProgressText)
-          modalProgressText.textContent = `${i + 1} / ${imageFiles.length}`;
+        // Hide progress
+        if (modalUploadProgress) modalUploadProgress.style.display = "none";
+
+        if (successCount === 0) {
+          alert("❌ Upload thất bại tất cả ảnh. Vui lòng thử lại.");
+          if (saveBtn) saveBtn.disabled = false;
+          if (cancelBtn) cancelBtn.disabled = false;
+          if (modalUploadStatus) {
+            modalUploadStatus.textContent = "❌ Upload thất bại tất cả ảnh.";
+            modalUploadStatus.style.color = "#dc3545";
+          }
+          return;
+        }
+
+        if (failCount > 0) {
+          if (
+            !confirm(
+              `⚠️ Upload thành công ${successCount}/${pendingPatternFiles.length} ảnh (${failCount} thất bại). Bạn có muốn tiếp tục lưu pattern không?`
+            )
+          ) {
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            return;
+          }
+        }
+
+        // Process and save pattern
+        const patternImages = uploadedUrls.map((img) => ({
+          char: img.char,
+          filename: img.fileName,
+          url: img.url,
+        }));
+
+        // Add to patternSets
+        const id = `uploaded_${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2, 7)}`;
+        patternSets.push({
+          id,
+          name: patternName,
+          source: "uploaded",
+          images: patternImages,
+        });
+
+        // Add to active list automatically
+        activePatternSetIds.add(id);
+
+        // Save to localStorage
+        if (typeof savePatternSetsToStorage === "function") {
+          savePatternSetsToStorage();
+        }
+
+        // Invalidate cache
+        invalidateCharMapForSet(id);
+
+        // Revoke Object URLs after successful upload
+        pendingPatternFiles.forEach((item) => {
+          if (item.objectUrl) {
+            try {
+              URL.revokeObjectURL(item.objectUrl);
+            } catch (e) {
+              console.warn("Error revoking URL:", e);
+            }
+          }
+        });
+
+        // Update UI
+        if (typeof rebuildSetsList === "function") rebuildSetsList();
+        if (typeof rebuildImageGrid === "function") rebuildImageGrid();
+        if (typeof rebuildAvailablePatternsList === "function")
+          rebuildAvailablePatternsList();
+
+        // Update order list if rotate mode is on
+        if (rotateMode) {
+          // Update patternSetOrder to match patternSets order (filtered by selected sets)
+          patternSetOrder = patternSets
+            .filter((set) => selectedSetIds.has(set.id))
+            .map((set) => set.id);
+        }
+
+        // Refresh UI
+        const textInput = document.getElementById("text");
+        if (textInput && textInput.value && typeof refreshUI === "function") {
+          refreshUI();
+        }
+
+        // Update pattern preview after saving
+        updatePatternPreview();
+
+        // Reset upload section to normal state
+        resetUploadSection();
+
+        // Close modal and show success
+        closePatternFormModal();
+        alert(`✅ Pattern "${patternName}" đã được lưu thành công!`);
+      } catch (error) {
+        console.error("Error during save:", error);
+        alert("❌ Có lỗi xảy ra khi lưu pattern: " + error.message);
+        if (saveBtn) saveBtn.disabled = false;
+        if (cancelBtn) cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  // Handle file input change - automatically load and preview when folder is selected
+  if (modalUploadInput) {
+    modalUploadInput.addEventListener("change", function () {
+      const files = Array.from(this.files || []);
+      if (!files.length) {
+        return;
       }
 
-      // Hide progress
-      if (modalUploadProgress) modalUploadProgress.style.display = "none";
+      // Filter only image files
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
-      if (successCount > 0) {
-        // Add to uploadedPatternImages
-        uploadedPatternImages.push(...newUploadedImages);
-
+      if (imageFiles.length === 0) {
+        const modalUploadStatus = document.getElementById("modalUploadStatus");
         if (modalUploadStatus) {
-          modalUploadStatus.textContent = `✅ Upload thành công ${successCount}/${
-            imageFiles.length
-          } ảnh${failCount > 0 ? ` (${failCount} thất bại)` : ""}`;
-          modalUploadStatus.style.color = "#28a745";
-        }
-
-        // Update upload preview (pattern vừa upload)
-        updateUploadPreview();
-      } else {
-        if (modalUploadStatus) {
-          modalUploadStatus.textContent = "❌ Upload thất bại tất cả ảnh.";
+          modalUploadStatus.style.display = "block";
+          modalUploadStatus.textContent =
+            "⚠️ Không tìm thấy ảnh nào trong thư mục";
           modalUploadStatus.style.color = "#dc3545";
         }
+        return;
       }
 
-      // Reset button
-      modalUploadBtn.disabled = false;
-      modalUploadBtn.textContent = "📤 Upload toàn bộ ảnh";
+      // Revoke previous Object URLs
+      pendingPatternFiles.forEach((item) => {
+        if (item.objectUrl) {
+          try {
+            URL.revokeObjectURL(item.objectUrl);
+          } catch (e) {
+            console.warn("Error revoking URL:", e);
+          }
+        }
+      });
+
+      // Clear previous data
+      uploadedPatternImages = [];
+      pendingPatternFiles = [];
+
+      // Process files: create Object URLs for preview
+      const modalUploadStatus = document.getElementById("modalUploadStatus");
+      const modalUploadProgress = document.getElementById(
+        "modalUploadProgress"
+      );
+
+      // Hide progress (not uploading yet)
+      if (modalUploadProgress) modalUploadProgress.style.display = "none";
+
+      // Process each file
+      imageFiles.forEach((file) => {
+        // Extract character from filename
+        const name = file.name || "";
+        const base = name.replace(/\.[^.]+$/, "");
+        const ch = (base[0] || "").toUpperCase();
+
+        // Only process supported characters
+        if (!isSupportedChar(ch)) return;
+
+        // Check if character already exists
+        if (pendingPatternFiles.some((item) => item.char === ch)) {
+          return; // Skip duplicate characters
+        }
+
+        // Create Object URL for preview
+        const objectUrl = URL.createObjectURL(file);
+
+        const imageData = {
+          char: ch,
+          fileName: file.name,
+          preview: objectUrl,
+          url: null, // Will be set after actual upload
+        };
+
+        uploadedPatternImages.push(imageData);
+        pendingPatternFiles.push({
+          char: ch,
+          file: file,
+          objectUrl: objectUrl,
+        });
+      });
+
+      if (uploadedPatternImages.length === 0) {
+        if (modalUploadStatus) {
+          modalUploadStatus.style.display = "block";
+          modalUploadStatus.textContent =
+            "⚠️ Không tìm thấy ảnh hợp lệ (chỉ hỗ trợ A-Z, 0-9)";
+          modalUploadStatus.style.color = "#dc3545";
+        }
+        return;
+      }
+
+      // Show status
+      if (modalUploadStatus) {
+        modalUploadStatus.style.display = "block";
+        modalUploadStatus.textContent = `✅ Đã tải ${uploadedPatternImages.length} ảnh. Ấn "Lưu Pattern" để upload lên server.`;
+        modalUploadStatus.style.color = "#28a745";
+      }
+
+      // Update upload preview (showing local preview)
+      updateUploadPreview();
     });
   }
 }

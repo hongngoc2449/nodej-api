@@ -1,79 +1,24 @@
 // Export image functionality
 
-// Helper function to get actual content bounds (crop transparent padding)
-function getImageBounds(img) {
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
+// Simple in-memory cache for loaded images and their content bounds
+// key: url -> { img: HTMLImageElement, bounds: {x,y,width,height} }
+const exportImageCache = new Map();
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  let minX = canvas.width;
-  let minY = canvas.height;
-  let maxX = 0;
-  let maxY = 0;
-
-  // Find bounding box of non-transparent pixels
-  for (let y = 0; y < canvas.height; y++) {
-    for (let x = 0; x < canvas.width; x++) {
-      const alpha = data[(y * canvas.width + x) * 4 + 3];
-      if (alpha > 0) {
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      }
-    }
+async function loadImageAndBounds(url) {
+  if (exportImageCache.has(url)) {
+    return exportImageCache.get(url);
   }
-
-  // If no content found, return original dimensions
-  if (minX > maxX || minY > maxY) {
-    return {
-      x: 0,
-      y: 0,
-      width: img.naturalWidth,
-      height: img.naturalHeight,
-    };
-  }
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX + 1,
-    height: maxY - minY + 1,
-  };
-}
-
-// Helper function to crop image to content bounds
-function cropImageToContent(img, bounds) {
-  const canvas = document.createElement("canvas");
-  canvas.width = bounds.width;
-  canvas.height = bounds.height;
-  const ctx = canvas.getContext("2d");
-
-  // Draw only the content area (crop transparent padding)
-  ctx.drawImage(
-    img,
-    bounds.x,
-    bounds.y,
-    bounds.width,
-    bounds.height,
-    0,
-    0,
-    bounds.width,
-    bounds.height
-  );
-
-  const croppedImg = new Image();
-  croppedImg.src = canvas.toDataURL();
-
-  return new Promise((resolve) => {
-    croppedImg.onload = () => resolve(croppedImg);
-    croppedImg.onerror = () => resolve(img); // Fallback to original if crop fails
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = url;
   });
+  const bounds = getImageBounds(img);
+  const record = { img, bounds };
+  exportImageCache.set(url, record);
+  return record;
 }
 
 async function loadImagesForExport(words) {
@@ -86,23 +31,14 @@ async function loadImagesForExport(words) {
       if (!item.missing && (item.filename || item.url)) {
         const imgPromise = new Promise(async (resolve, reject) => {
           try {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            await new Promise((imgResolve, imgReject) => {
-              img.onload = imgResolve;
-              img.onerror = imgReject;
-              img.src = getImageSrc(item);
-            });
-
-            // Crop transparent padding
-            const bounds = getImageBounds(img);
-            const croppedImg = await cropImageToContent(img, bounds);
-
+            const url = getImageSrc(item);
+            const { img, bounds } = await loadImageAndBounds(url);
             resolve({
-              image: croppedImg,
+              image: img,
               char: item.char,
               width: bounds.width,
               height: bounds.height,
+              bounds,
             });
           } catch (err) {
             reject(err);
@@ -159,6 +95,20 @@ function calculateCanvasDimensions(
   return { width: totalWidth, height: maxHeight, wordSpacing };
 }
 
+// Compute scale factor between preview (max-height 60px) and export (original heights)
+function computeSpacingScaleFactor(loadedWords, previewMaxHeight = 60) {
+  let maxHeight = 0;
+  loadedWords.forEach((word) => {
+    word.forEach((item) => {
+      maxHeight = Math.max(maxHeight, item.height || 0);
+    });
+  });
+  if (!maxHeight) return 1;
+  const previewHeight = Math.min(maxHeight, previewMaxHeight);
+  if (!previewHeight) return 1;
+  return maxHeight / previewHeight;
+}
+
 function drawPatternsToCanvas(
   ctx,
   loadedWords,
@@ -180,8 +130,23 @@ function drawPatternsToCanvas(
         ctx.textBaseline = "middle";
         ctx.fillText(item.char, x + item.width / 2, item.height / 2);
       } else {
-        // Draw image with its original dimensions
-        ctx.drawImage(item.image, x, 0, item.width, item.height);
+        // Draw only the content area using source bounds (avoid extra crop cost)
+        const b = item.bounds;
+        if (b) {
+          ctx.drawImage(
+            item.image,
+            b.x,
+            b.y,
+            b.width,
+            b.height,
+            x,
+            0,
+            item.width,
+            item.height
+          );
+        } else {
+          ctx.drawImage(item.image, x, 0, item.width, item.height);
+        }
       }
 
       // Move to next character position
@@ -285,17 +250,18 @@ async function exportImage() {
   try {
     const loadedWords = await loadImagesForExport(words);
 
-    // Store loaded words and words for preview updates
-    exportLoadedWords = loadedWords;
-    exportWords = words;
-
-    // Get initial spacing values
-    const characterSpacing = parseInt(
+    // Get spacing values from inline controls (preview pixels)
+    const characterSpacingPreview = parseInt(
       document.getElementById("characterSpacingInput")?.value || 0
     );
-    const wordSpacing = parseInt(
+    const wordSpacingPreview = parseInt(
       document.getElementById("wordSpacingInput")?.value || 40
     );
+
+    // Scale spacing from preview to export dimensions
+    const scale = computeSpacingScaleFactor(loadedWords, 60);
+    const characterSpacing = Math.round(characterSpacingPreview * scale);
+    const wordSpacing = Math.round(wordSpacingPreview * scale);
 
     const { width, height } = calculateCanvasDimensions(
       loadedWords,
@@ -310,15 +276,9 @@ async function exportImage() {
 
     drawPatternsToCanvas(ctx, loadedWords, wordSpacing, characterSpacing);
 
-    // Store canvas and filename for download
-    exportCanvas = canvas;
-    exportFilename = `pattern-${text.trim().replace(/\s+/g, "-")}.png`;
-
-    // Display preview in modal
-    updatePreview();
-
-    // Open preview modal
-    openExportPreviewModal();
+    // Download immediately
+    const filename = `pattern-${text.trim().replace(/\s+/g, "-")}.png`;
+    downloadCanvasAsImage(canvas, filename);
   } catch (error) {
     console.error("Error exporting image:", error);
     alert("Có lỗi xảy ra khi xuất hình ảnh: " + error.message);
