@@ -2,12 +2,14 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
 const config = require("./config");
+const mongoose = require("mongoose");
 
 const router = require("./routes/r_tiktok_new");
-const larkRouter = require("./routes/r_lark");
+const r_lark = require("./routes/r_lark");
+const r_user = require("./routes/r_user");
+const r_patterns = require("./routes/r_patterns");
 
 const app = express();
 const PORT = config.PORT;
@@ -17,150 +19,58 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from patterns directory
-app.use("/patterns", express.static(path.join(__dirname, "patterns")));
-// Serve static assets from pattern/assets directory
-app.use(
-  "/pattern/assets",
-  express.static(path.join(__dirname, "pattern", "assets"))
-);
-
 // View engine setup for EJS templates
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "pattern"));
+app.set("views", "./views");
+app.use(express.static("static"));
 
-// Use routers
+const { checkAuth } = require("./controller/checkUserAccess");
+
+// MongoDB connection (optional)
+if (process.env.MONGODB_URI) {
+  mongoose
+    .connect(process.env.MONGODB_URI, {
+      dbName: process.env.MONGODB_DB || undefined,
+    })
+    .then(() => console.log("✅ Connected to MongoDB"))
+    .catch((err) => console.error("❌ MongoDB connection error:", err.message));
+}
+
+const session = require("express-session");
+app.use(
+  session({
+    secret: "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    // Gia hạn thời hạn cookie trên mỗi request hoạt động
+    rolling: true,
+    // Thiết lập cookie an toàn hơn và bền hơn
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production", // yêu cầu HTTPS ở production
+    },
+  })
+);
+
+// Use routers (placed AFTER session so req.session is available)
 app.use(router);
-app.use(larkRouter);
+app.use(r_lark);
+app.use(r_patterns);
+app.use(r_user);
 
-// Routes
-// Helper: list available text-based pattern files
-function listTextPatternFiles() {
-  const patternsDir = path.join(__dirname, "patterns");
-  const allowed = new Set([".txt", ".ejs", ".tpl", ".md"]);
-  try {
-    const entries = fs.readdirSync(patternsDir, { withFileTypes: true });
-    return entries
-      .filter((ent) => ent.isFile())
-      .map((ent) => ent.name)
-      .filter((name) => allowed.has(path.extname(name).toLowerCase()));
-  } catch (_) {
-    return [];
-  }
-}
-
-// Helper: list available image files from Digital Ocean (builtin patterns)
-function listImageFiles() {
-  // Try to load from config file first (Digital Ocean URLs)
-  const configPath = path.join(__dirname, "pattern", "builtin-patterns-config.json");
-  
-  try {
-    if (fs.existsSync(configPath)) {
-      const configData = fs.readFileSync(configPath, "utf8");
-      const config = JSON.parse(configData);
-      
-      // Return images with URLs from Digital Ocean
-      return config.map((item) => ({
-        char: item.char,
-        filename: item.filename,
-        url: item.url, // Digital Ocean URL
-      }));
-    }
-  } catch (err) {
-    console.warn("⚠️ Could not load builtin patterns config, falling back to local files:", err.message);
-  }
-  
-  // Fallback: load from local files if config doesn't exist
-  const set1Dir = path.join(__dirname, "patterns", "Set 1");
-  const allowed = new Set([".png", ".jpg", ".jpeg", ".gif", ".svg"]);
-  try {
-    const entries = fs.readdirSync(set1Dir, { withFileTypes: true });
-    return entries
-      .filter((ent) => ent.isFile())
-      .map((ent) => {
-        const name = ent.name;
-        const ext = path.extname(name).toLowerCase();
-        if (allowed.has(ext)) {
-          // Extract character from filename (e.g., "A.png" -> "A")
-          const char = path.basename(name, ext);
-          return {
-            filename: name,
-            char: char,
-            path: path.join(set1Dir, name),
-          };
-        }
-        return null;
-      })
-      .filter((item) => item !== null)
-      .sort((a, b) => {
-        // Sort: numbers first (0-9), then letters (A-Z)
-        const aIsNum = /^\d$/.test(a.char);
-        const bIsNum = /^\d$/.test(b.char);
-        if (aIsNum && !bIsNum) return -1;
-        if (!aIsNum && bIsNum) return 1;
-        return a.char.localeCompare(b.char);
-      });
-  } catch (_) {
-    return [];
-  }
-}
-
-// Pattern input UI
-app.get("/pattern", (req, res) => {
-  const patternFiles = listTextPatternFiles();
-  const availableImages = listImageFiles();
+// Pattern UI
+app.get("/pattern", checkAuth, async (req, res) => {
   res.render("pattern", {
     data: {
       text: "",
       result: null,
-      availableImages,
+      availableImages: [],
       error: null,
     },
-  });
-});
-
-// Handle conversion from text to images
-app.post("/pattern", (req, res) => {
-  const { text, selectedChar } = req.body || {};
-  const safeText = typeof text === "string" ? text.toUpperCase() : "";
-  const availableImages = listImageFiles();
-
-  let result = [];
-  let error = null;
-
-  if (!safeText) {
-    error = "Vui lòng nhập text cần chuyển đổi";
-  } else {
-    // Convert each character to corresponding image
-    for (let i = 0; i < safeText.length; i++) {
-      const char = safeText[i];
-      const imageInfo = availableImages.find((img) => img.char === char);
-
-      if (imageInfo) {
-        result.push({
-          char: char,
-          filename: imageInfo.filename,
-          position: i,
-        });
-      } else {
-        // If character not found, skip it or show placeholder
-        result.push({
-          char: char,
-          filename: null,
-          position: i,
-          missing: true,
-        });
-      }
-    }
-  }
-
-  res.render("pattern", {
-    data: {
-      text: safeText,
-      result: result,
-      availableImages,
-      error: error,
-    },
+    user: req.session.user,
+    title: "Pattern Image Converter",
+    activePage: "pattern",
   });
 });
 

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .register-container {
+        background-color: #ffffff;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 24px;
+        margin: 20px;
+      }
+
+      p {
+        color: #777;
+        margin-bottom: 20px;
+      }
+
+      label {
+        font-size: 14px;
+        color: #333;
+        display: block;
+        text-align: left;
+        margin-bottom: 5px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #0a8592; /* Màu cam của nút */
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+        font-size: 16px;
+        box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.3); /* Hiệu ứng shadow */
+        border-radius: 5px; /* Bo góc mềm mại */
+      }
+
+      button[type="submit"]:hover {
+        background-color: #0aa4b6; /* Hiệu ứng khi rê chuột lên nút */
+      }
+
+      .create-account {
+        margin-top: 20px;
+      }
+
+      .create-account a {
+        color: #0a8592;
+        text-decoration: none;
+        font-weight: bold;
+      }
+
+      .create-account a:hover {
+        text-decoration: underline;
+      }
+
+      #error-message {
+        color: red;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-container">
+      <h1>Đăng ký <span style="color: #0a8592">Ascend</span>Global</h1>
+      <p>Tạo tài khoản để bắt đầu hành trình của bạn</p>
+
+      <form id="registerForm">
+        <div class="input-group">
+          <label for="username">Tên người dùng</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+
+        <div id="error-message"></div>
+
+        <div class="input-group">
+          <label for="password">Mật khẩu</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+
+        <div class="input-group">
+          <label for="confirmPassword">Xác nhận Mật khẩu</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required />
+        </div>
+
+        <button type="submit">Đăng ký</button>
+      </form>
+
+      <div class="create-account">
+        <p>Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("registerForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const errorMessage = document.getElementById("error-message");
+
+        const regex = /^[a-zA-Z0-9]+$/;
+
+        if (!regex.test(username)) {
+          errorMessage.textContent = "Tên người dùng không được chứa ký tự đặc biệt.";
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          errorMessage.textContent = "Mật khẩu và xác nhận mật khẩu không khớp.";
+          return;
+        }
+
+        try {
+          const response = await fetch("/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password, confirmPassword }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            window.location.href = "/login"; // Chuyển hướng tới trang chủ
+          } else {
+            errorMessage.textContent = result.message; // Hiển thị thông báo lỗi
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          errorMessage.textContent = "Đã xảy ra lỗi khi đăng ký."; // Hiển thị lỗi khi fetch thất bại
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<button
+  id="backToTopBtn"
+  style="
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    z-index: 99;
+    font-size: 18px;
+    border: none;
+    outline: none;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 4px;
+  "
+>
+  Top
+</button>
+
+<style>
+  #backToTopBtn:hover {
+    background-color: #777; /* Màu nền khi di chuột vào nút */
+  }
+</style>
+
+<script>
+  // Khi người dùng cuộn xuống 20px từ đầu tài liệu, hiển thị nút
+  window.onscroll = function () {
+    scrollFunction();
+  };
+
+  function scrollFunction() {
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+      document.getElementById("backToTopBtn").style.display = "block";
+    } else {
+      document.getElementById("backToTopBtn").style.display = "none";
+    }
+  }
+
+  // Khi người dùng nhấp vào nút, cuộn lên đầu trang
+  document.getElementById("backToTopBtn").onclick = function () {
+    topFunction();
+  };
+
+  function topFunction() {
+    document.body.scrollTop = 0; // Cho Safari
+    document.documentElement.scrollTop = 0; // Cho Chrome, Firefox, IE và Opera
+  }
+</script>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập</title>
+    <style>
+      * {
+        box-sizing: border-box; /* Đảm bảo tất cả phần tử đều có cùng quy tắc tính toán kích thước */
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .login-container {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 400px; /* Đảm bảo chiều rộng của container */
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      p {
+        color: #777;
+        margin-bottom: 20px;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+
+      label {
+        font-size: 14px;
+        color: #333;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box; /* Đảm bảo kích thước tính toán bao gồm padding và border */
+      }
+
+      button[type="button"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #0a8592;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
+        box-sizing: border-box;
+        box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.3); /* Hiệu ứng shadow */
+        border-radius: 5px; /* Bo góc mềm mại */
+      }
+      button[type="button"]:hover {
+        background-color: #0c9dad; /* Hiệu ứng khi rê chuột lên nút */
+      }
+
+      .create-account {
+        margin-top: 20px;
+      }
+
+      .create-account a {
+        color: #0a8592;
+        text-decoration: none;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h1>Đăng nhập <span style="color: #0a8592">Ascend</span>Global</h1>
+      <p>Bắt đầu hành trình của bạn</p>
+
+      <form>
+        <div class="input-group">
+          <label for="username">Email</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+
+        <div class="input-group">
+          <label for="password">Mật khẩu</label>
+          <div class="password-wrapper">
+            <input type="password" id="password" name="password" required />
+          </div>
+        </div>
+
+        <button type="button" onclick="login(event)">ĐĂNG NHẬP</button>
+      </form>
+
+      <div class="create-account">
+        <p>Chưa có tài khoản? <a href="/register">Tạo tài khoản</a></p>
+      </div>
+    </div>
+    <script>
+      async function login(event) {
+        event.preventDefault();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirect = urlParams.get("redirect") || "";
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        try {
+          const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username,
+              password,
+              redirect,
+            }),
+          });
+
+          // Nếu phản hồi từ server là một chuyển hướng, hãy chuyển hướng trang client
+          if (response.redirected) {
+            window.location.href = response.url;
+          } else {
+            // Nếu không chuyển hướng, kiểm tra trạng thái phản hồi và thông báo lỗi
+            const data = await response.json();
+            if (response.ok) {
+              window.location.href = data.redirect || "";
+            } else {
+              alert(data.message);
+            }
+          }
+        } catch (error) {
+          console.error("Error logging in:", error);
+          alert("Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại sau.");
+        }
+      }
+
+      // Thêm event listener cho phím Enter
+      document.addEventListener("DOMContentLoaded", function () {
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+
+        // Xử lý khi nhấn Enter trong các trường input
+        usernameInput.addEventListener("keypress", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            login(event);
+          }
+        });
+
+        passwordInput.addEventListener("keypress", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            login(event);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

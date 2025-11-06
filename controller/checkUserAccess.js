@@ -1,12 +1,22 @@
+// Check authentication - chỉ cần đăng nhập
 const checkAuth = (req, res, next) => {
-  // Simple permissive middleware for testing
-  // Allow optional token gate via header x-api-key that must match env API_KEY if provided
-  const requiredKey = process.env.API_KEY;
-  const providedKey = req.headers["x-api-key"];
-  if (requiredKey && providedKey !== requiredKey) {
-    return res.status(401).json({ success: false, error: "Unauthorized" });
+  if (req.session.loggedIn) {
+    return next();
   }
-  next();
+  const returnUrl = encodeURIComponent(req.originalUrl);
+  res.redirect(`/login?redirect=${returnUrl}`);
 };
 
-module.exports = { checkAuth };
+// Check user access - đăng nhập + phân quyền
+function checkUserAccess(kinds) {
+  return function (req, res, next) {
+    if (req.session.user && kinds.includes(req.session.user.kind)) {
+      next();
+    } else {
+      const returnUrl = encodeURIComponent(req.originalUrl);
+      res.redirect(`/login?redirect=${returnUrl}`);
+    }
+  };
+}
+
+module.exports = { checkAuth, checkUserAccess };

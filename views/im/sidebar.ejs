@@ -1,0 +1,587 @@
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+
+<style>
+  :root {
+    --main-color: #0a8592;
+  }
+
+  body {
+    background-color: #f8f9fa;
+  }
+
+  .main-content {
+    min-width: 1600px;
+    margin-left: 250px;
+    padding: 20px;
+  }
+
+  .table-container {
+    width: 100%;
+    /* margin: auto; */
+    border-radius: 10px; /* Bo cạnh */
+    background-color: white; /* Nền trắng */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Đổ bóng */
+    padding: 20px;
+    margin-top: 10px; /* Khoảng cách bên ngoài */
+  }
+</style>
+
+<!--  SIDE BAR -->
+<style>
+  .sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    padding-top: 20px;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar .nav-link {
+    padding: 7px;
+    font-weight: 500;
+    color: #7d7c7c;
+    margin-left: 15px;
+    margin-right: 15px;
+    margin-bottom: 5px;
+  }
+
+  /* .sidebar .nav-link:hover {
+   color: #ffffff;
+  } */
+
+  .sidebar .nav-link.active {
+    background-color: var(--main-color); /* Màu nền vàng khi active */
+    color: #ffffff; /* Màu chữ trắng */
+    box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.3); /* Hiệu ứng shadow */
+    border-radius: 10px; /* Bo góc mềm mại */
+  }
+
+  .sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 17px;
+    color: #333;
+    display: block;
+  }
+
+  .sidebar a:hover,
+  .sidebar a.active {
+    background-color: #eff2f4;
+    border-radius: 10px; /* Bo góc mềm mại */
+  }
+
+  .sidebar .has-submenu.collapsed::after {
+    content: "\25B8"; /* Right-pointing small black triangle */
+    float: right;
+    font-size: 12px; /* Adjust size as needed */
+  }
+
+  .sidebar .has-submenu:not(.collapsed)::after {
+    content: "\25BE"; /* Down-pointing small black triangle */
+    float: right;
+    font-size: 12px; /* Adjust size as needed */
+  }
+
+  .collapse-inner {
+    padding-left: 20px;
+  }
+</style>
+
+<!-- INFO USER -->
+<style>
+  .sidebar .user-info {
+    padding: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: center;
+    margin-top: auto; /* Ensures the user-info div stays at the bottom */
+  }
+
+  .sidebar .user-info .user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+  }
+
+  .sidebar .user-info .user-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+
+  .sidebar .user-info .user-kind {
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+
+  .sidebar .user-info .user-links {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* khoảng cách giữa các liên kết */
+  }
+
+  .sidebar .user-info .user-links .user-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: normal; /* chữ mảnh */
+  }
+
+  .sidebar .user-info .user-links .user-link:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<!-- BUTTON -->
+<style>
+  .bt-upLabel {
+    display: inline-block;
+    padding: 0.5em 1em;
+    font-size: 1rem;
+    color: #007bff;
+    background-color: #e9f7fd;
+    border: 1px solid #007bff;
+    border-radius: 10px; /* Bo tròn cạnh */
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none; /* Loại bỏ gạch chân mặc định */
+  }
+
+  .bt-upLabel:hover {
+    background-color: #d0f0fc; /* Đổi màu nền khi hover */
+  }
+
+  .bt-designer {
+    display: inline-block;
+    padding: 0.5em 1em;
+    font-size: 1rem;
+    color: rgb(3, 152, 85);
+    background-color: rgb(236, 253, 243);
+    border: 1px solid rgb(3, 152, 85);
+    border-radius: 10px; /* Bo tròn cạnh */
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none; /* Loại bỏ gạch chân mặc định */
+  }
+
+  .bt-designer:hover {
+    background-color: #b1f7d3; /* Đổi màu nền khi hover */
+  }
+</style>
+
+<!-- SELECT -->
+<style>
+  /* Style for the select element */
+  select {
+    color: green;
+    width: auto;
+    margin: auto;
+    padding: 10px;
+    padding-right: 25px;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    appearance: none; /* Remove default arrow */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"%3e%3cpath fill="%23999" d="M2 0L0 2h4zm0 5L0 3h4z"/%3e%3c/svg%3e');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px;
+    border-radius: 10px; /* Bo tròn cạnh */
+  }
+  select:hover {
+    background-color: #f8f9fa; /* Change background color when hover */
+  }
+
+  /* Style for the dropdown options */
+  select option {
+    color: #7d7c7c;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 10px;
+  }
+
+  /* Style for the dropdown list */
+  select:focus {
+    /* border-color: #007bff; */
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  /* Additional styling to match the example */
+  select::-ms-expand {
+    display: none; /* Remove the default arrow in IE */
+  }
+</style>
+
+<!-- limit WIDTH -->
+<style>
+  .limited-width {
+    width: 150px;
+    word-wrap: break-word; /* Cho phép ngắt dòng khi từ quá dài */
+    word-break: break-word; /* Ngắt từ nếu quá dài */
+    white-space: normal; /* Đảm bảo ngắt dòng */
+  }
+</style>
+
+<!-- TAB -->
+<style>
+  .nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 20px;
+  }
+
+  .nav-tabs .nav-item {
+    margin-bottom: -1px;
+  }
+
+  .nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    color: #6c757d; /* Màu chữ đen nhẹ khi bình thường */
+    font-weight: 500; /* Đậm nhẹ */
+  }
+
+  .nav-tabs .nav-link:hover {
+    color: #495057; /* Màu chữ đậm hơn khi hover */
+  }
+
+  .nav-tabs .nav-link.active {
+    color: #ffffff; /* Màu chữ trắng khi active */
+    background-color: #ffb500; /* Màu nền vàng khi active */
+    border-color: transparent; /* Ẩn viền */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  }
+</style>
+
+<!-- Form -->
+<style>
+  /* Đặt style chung cho form */
+  form {
+    width: 100%;
+    max-width: 800px; /* Tăng max-width để đủ chỗ cho các phần tử nằm trên cùng một hàng */
+    /* margin: 20px auto;
+    padding: 10px; */
+  }
+
+  /* Style cho các hàng trong form */
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center; /* Căn giữa các phần tử theo chiều dọc */
+  }
+
+  /* Style cho các nhãn */
+  .form-row label {
+    font-size: 1.2em;
+    color: #333;
+    margin-bottom: 0; /* Xóa margin-bottom để căn giữa tốt hơn */
+  }
+
+  /* Style cho các input */
+  .form-row input[type="date"] {
+    font-size: larger;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-right: 10px; /* Thêm margin-right để tạo khoảng cách giữa các phần tử */
+  }
+</style>
+
+<!-- Table -->
+<style>
+  .label {
+    color: #007bff; /* Màu xanh */
+    padding: 0.25em 0.5em; /* Khoảng cách bên trong */
+    border-radius: 5px; /* Bo tròn cạnh */
+  }
+
+  .table {
+    min-width: 1500px;
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    background-color: #fff;
+    border-collapse: collapse;
+    border: 1px solid #dee2e6; /* Đường viền bao quanh */
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+    vertical-align: middle; /* Căn giữa theo chiều dọc */
+  }
+
+  .table thead th {
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6; /* Dấu gạch dọc nhẹ */
+    text-align: center; /* Căn giữa theo chiều ngang */
+    vertical-align: middle;
+  }
+
+  .table thead th:last-child {
+    border-right: none; /* Loại bỏ dấu gạch dọc cuối cùng */
+  }
+
+  .table tbody + tbody {
+    border-top: 2px solid #dee2e6;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+  }
+
+  .badge-primary {
+    color: #fff;
+    background-color: #007bff;
+  }
+
+  .badge-success {
+    color: #fff;
+    background-color: #28a745;
+  }
+
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .d-flex {
+    display: flex;
+    align-items: center;
+  }
+
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+
+  .justify-content-between {
+    justify-content: space-between;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.5rem;
+  }
+
+  .mb-3 {
+    margin-bottom: 1rem;
+  }
+
+  .border-bottom {
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .pt-3 {
+    padding-top: 1rem;
+  }
+
+  .pb-2 {
+    padding-bottom: 0.5rem;
+  }
+
+  .ml-sm-auto {
+    margin-left: auto !important;
+  }
+
+  .btn-toolbar .btn-group {
+    margin-right: 0.5rem;
+  }
+
+  .btn-group .btn {
+    margin-right: 0.5rem;
+  }
+</style>
+
+<!-- cùng 1 dòng. -->
+<style>
+  /* dau gach ngang menu */
+  .menu-divider {
+    border: 0;
+    height: 1px;
+    margin: 1rem 30px; /* Thêm khoảng cách hai bên */
+    background: rgba(0, 0, 0, 0.1); /* Màu sắc và độ mờ của đường kẻ */
+  }
+
+  #filter {
+    display: flex;
+    justify-content: space-between; /* Đảm bảo khoảng cách giữa các phần tử */
+    margin: auto;
+    width: 100%;
+    background-color: #fff;
+    padding: 5px;
+    position: sticky; /* Đảm bảo phần tử cha nằm cố định khi cuộn */
+    top: 0;
+    z-index: 100; /* Đảm bảo phần tử này nằm trên cùng */
+  }
+
+  #leftDiv {
+    display: flex;
+    justify-content: flex-start; /* Căn trái tự nhiên */
+    align-items: center; /* Đảm bảo các phần tử được căn giữa theo chiều dọc */
+    margin-right: auto; /* Đẩy #dl-label sang trái */
+  }
+
+  /* hiệu quả */
+  .one-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Căn đều khoảng cách giữa h1 và form */
+  }
+</style>
+
+<div class="sidebar flex-column" style="height: 100vh">
+  <div>
+    <div class="text-center mb-4 d-flex align-items-center justify-content-center">
+      <!-- <img src="/imgthumb/logo.webp" alt="Icon" class="mr-2" style="width: 50px; height: 50px" /> -->
+      <span class="h4 mb-0" style="font-size: 1.25rem; font-weight: 700 !important"
+        ><span style="color: var(--main-color)">Ascend</span><span style="color: #7c8084">Global</span></span
+      >
+    </div>
+    <a href="/" class="nav-link <%= activePage === 'home' ? 'active' : '' %>" data-page="home"
+      ><i class="fas fa-home"></i> Home</a
+    >
+    <% if (!user.kind.includes("user") ) { %>
+    <!--  -->
+    <hr class="menu-divider" />
+    <% if (user.kind === "admin" || user.kind === "leader" || user.kind === "seller") { %>
+    <a href="#warehouseSubmenu" class="nav-link collapsed has-submenu" data-toggle="collapse" aria-expanded="false">
+      <i class="fas fa-warehouse"></i> Warehouse
+    </a>
+    <div class="collapse" id="warehouseSubmenu">
+      <div class="collapse-inner">
+        <a href="/sku-list" class="nav-link <%= activePage === 'sku-list' ? 'active' : '' %>" data-page="sku-list">
+          <i class="fas fa-tags"></i> Skus
+        </a>
+        <a
+          href="/product-list"
+          class="nav-link <%= activePage === 'product-list' ? 'active' : '' %>"
+          data-page="product-list"
+          ><i class="fas fa-cubes"></i> Products</a
+        >
+        <a href="/log" class="nav-link <%= activePage === 'warehouse-log' ? 'active' : '' %>" data-page="warehouse-log"
+          ><i class="fas fa-history"></i> Logs</a
+        >
+      </div>
+    </div>
+    <% } %> <% } %> <% if (user.kind && !user.kind.includes("design") && !user.kind.includes("user") ) { %>
+    <a href="/orders-process" class="nav-link <%= activePage === 'orders-process' ? 'active' : '' %>"
+      ><i class="fas fa-shopping-cart"></i> Orders Process</a
+    >
+    <a href="/tracking" class="nav-link <%= activePage === 'tracking' ? 'active' : '' %>"
+      ><i class="fas fa-truck"></i> Tracking</a
+    >
+    <% } %> <% if (user.kind === "admin" || user.kind === "leader") { %>
+    <hr class="menu-divider" />
+    <a href="/chart" class="nav-link <%= activePage === 'chart' ? 'active' : '' %>"
+      ><i class="fas fa-chart-bar"></i> Chart</a
+    >
+    <a href="/user" class="nav-link <%= activePage === 'user' ? 'active' : '' %>" data-page="settings"
+      ><i class="fas fa-user"></i> Users</a
+    >
+    <a href="/add-shop" class="nav-link <%= activePage === 'add-shop' ? 'active' : '' %>" data-page="stores"
+      ><i class="fas fa-store"></i> Add Stores</a
+    >
+    <a href="/set-shop" class="nav-link <%= activePage === 'set-shop' ? 'active' : '' %>" data-page="stores"
+      ><i class="fas fa-user-check"></i> Set Stores</a
+    >
+
+    <% } %> <% if (!user.kind.includes("user") ) { %>
+    <hr class="menu-divider" />
+    <a href="/upfile" class="nav-link <%= activePage === 'upfile' ? 'active' : '' %>" data-page="upfile"
+      ><i class="fas fa-upload"></i> Up File</a
+    >
+    <!-- <a href="/add-design" class="nav-link <%= activePage === 'add-design' ? 'active' : '' %>" data-page="add-design"><i class="fas fa-file-import"></i> Add Design</a> -->
+    <a href="/order?idorder=" class="nav-link" data-page="help"><i class="fas fa-search"></i> Search</a>
+    <% } %>
+  </div>
+  <div class="user-info mt-auto">
+    <img src="/imgthumb/avatar.png" alt="User Avatar" class="user-avatar" />
+    <div class="user-details">
+      <h6 class="user-name"><%= user.username %></h6>
+      <span class="user-kind"><%= user.kind %></span>
+      <div class="user-links">
+        <a href="/profile" class="user-link">Profile</a>
+        <a href="/logout" class="user-link">Logout</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    activeSubMenus("warehouseSubmenu");
+    activeSubMenus("ordersSubmenu");
+  });
+
+  function activeSubMenus(ordersSubmenu) {
+    const mainLink = document.querySelector(`a[href="#${ordersSubmenu}"]`);
+    const submenu = document.querySelector(`#${ordersSubmenu}`);
+
+    // Kiểm tra xem submenu có tồn tại không
+    if (!mainLink || !submenu) {
+      return;
+    }
+
+    const submenuLinks = submenu.querySelectorAll(".nav-link");
+
+    let isActive = false;
+
+    submenuLinks.forEach((link) => {
+      if (link.classList.contains("active")) {
+        isActive = true;
+      }
+    });
+
+    if (isActive) {
+      mainLink.setAttribute("aria-expanded", "true");
+      mainLink.classList.remove("collapsed");
+      submenu.classList.add("show");
+    }
+
+    mainLink.addEventListener("click", function () {
+      const expanded = mainLink.getAttribute("aria-expanded") === "true";
+      mainLink.setAttribute("aria-expanded", !expanded);
+      mainLink.classList.toggle("collapsed", expanded);
+    });
+  }
+
+  $(document).ready(function () {
+    $(".sidebar a[data-page]").on("click", function (e) {
+      // Remove active class from all links and add to the clicked link
+      $(".sidebar a").removeClass("active");
+      $(this).addClass("active");
+    });
+  });
+
+  const userKind = "<%= user.kind %>";
+  const userName = "<%= user.username %>";
+</script>

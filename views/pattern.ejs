@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pattern Image Converter</title>
+    <link rel="stylesheet" href="/css/pattern.css" />
+    <script type="application/json" id="images-data">
+      <%- JSON.stringify(data.availableImages || []) %>
+    </script>
+    <!-- Load JavaScript modules in order -->
+    <script src="/js/config.js"></script>
+    <script src="/js/helpers.js"></script>
+    <script src="/js/patternManager.js"></script>
+    <script src="/js/uiManager.js"></script>
+    <script src="/js/exportHandler.js"></script>
+    <script src="/js/uploadHandler.js"></script>
+    <script src="/js/patternFormManager.js"></script>
+    <script src="/js/availablePatternsManager.js"></script>
+    <script src="/js/main.js"></script>
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <!-- navi -->
+    <div class="main-content">
+      <div class="real-time-indicator" id="real-time-indicator">
+        🔄 Converting...
+      </div>
+      <div class="container">
+        <h1>Pattern Image Converter</h1>
+
+        <div class="form-section">
+          <div
+            class="text-input-grid"
+            style="
+              display: grid;
+              grid-template-columns: 0.8fr 1.2fr;
+              gap: 20px;
+              align-items: flex-start;
+            "
+          >
+            <div
+              class="text-input"
+              style="box-sizing: border-box; overflow: hidden"
+            >
+              <label for="text">Text Input</label>
+              <textarea
+                id="text"
+                name="text"
+                rows="2"
+                placeholder="Nhập ký tự từ A-Z hoặc 0-9 (Ví dụ: Hello, 123, abc)"
+                required
+                style="width: 100%; box-sizing: border-box"
+              >
+<% if (data && data.text && data.text.trim()) { %><%= data.text %><% } %></textarea
+              >
+            </div>
+            <div
+              class="controls-container"
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-top: 28px;
+              "
+            >
+              <div
+                class="controls-group"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 15px;
+                  align-items: center;
+                  width: fit-content;
+                "
+              >
+                <div
+                  class="buttons-row"
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="radio"
+                      name="mode"
+                      id="singleMode"
+                      value="single"
+                      checked
+                      style="width: 18px; height: 18px; cursor: pointer"
+                    />
+                    <span style="font-weight: 600; color: #333">Single</span>
+                  </label>
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="radio"
+                      name="mode"
+                      id="randomMode"
+                      value="random"
+                      style="width: 18px; height: 18px; cursor: pointer"
+                    />
+                    <span style="font-weight: 600; color: #333">Random</span>
+                  </label>
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="radio"
+                      name="mode"
+                      id="rotateMode"
+                      value="rotate"
+                      style="width: 18px; height: 18px; cursor: pointer"
+                    />
+                    <span style="font-weight: 600; color: #333">Rotate</span>
+                  </label>
+                  <button
+                    id="openPatternFormBtn"
+                    style="
+                      padding: 10px 18px;
+                      background: linear-gradient(
+                        135deg,
+                        #059669 0%,
+                        #047857 100%
+                      );
+                      color: white;
+                      border: none;
+                      border-radius: 8px;
+                      cursor: pointer;
+                      font-weight: 600;
+                      font-size: 16px;
+                      transition: all 0.3s ease;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                      white-space: nowrap;
+                      flex: 0 0 auto;
+                      min-width: unset;
+                      width: auto;
+                    "
+                  >
+                    ➕ Create Pattern
+                  </button>
+                  <button
+                    id="exportImageBtn"
+                    style="
+                      padding: 10px 18px;
+                      background: linear-gradient(
+                        135deg,
+                        #f59e0b 0%,
+                        #d97706 100%
+                      );
+                      color: white;
+                      border: none;
+                      border-radius: 8px;
+                      cursor: pointer;
+                      font-weight: 600;
+                      font-size: 16px;
+                      transition: all 0.3s ease;
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                      white-space: nowrap;
+                      flex: 0 0 auto;
+                      min-width: unset;
+                      width: auto;
+                    "
+                  >
+                    📥 Xuất hình ảnh
+                  </button>
+                </div>
+                <div
+                  class="sliders-row"
+                  style="
+                    display: grid;
+                    grid-template-columns: auto auto;
+                    gap: 40px;
+                    justify-content: center;
+                  "
+                >
+                  <div style="width: auto">
+                    <label
+                      for="characterSpacingInput"
+                      style="
+                        display: block;
+                        margin-bottom: 10px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                        line-height: 1.2;
+                      "
+                    >
+                      Khoảng cách ký tự:
+                      <span
+                        id="characterSpacingValue"
+                        style="
+                          color: #059669;
+                          font-weight: 700;
+                          font-size: 14px;
+                        "
+                        >1</span
+                      >
+                    </label>
+                    <input
+                      type="range"
+                      id="characterSpacingInput"
+                      min="0"
+                      max="30"
+                      value="1"
+                      step="1"
+                      style="
+                        width: clamp(220px, 75%, 360px);
+                        height: 6px;
+                        cursor: pointer;
+                        accent-color: #059669;
+                        margin: 0;
+                        display: block;
+                      "
+                    />
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        width: clamp(220px, 75%, 360px);
+                        margin-top: 6px;
+                        font-size: 11px;
+                        color: #999;
+                        line-height: 1;
+                      "
+                    >
+                      <span>0</span><span>15</span><span>30</span>
+                    </div>
+                  </div>
+                  <div style="width: auto">
+                    <label
+                      for="wordSpacingInput"
+                      style="
+                        display: block;
+                        margin-bottom: 10px;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                        line-height: 1.2;
+                      "
+                    >
+                      Khoảng cách từ:
+                      <span
+                        id="wordSpacingValue"
+                        style="
+                          color: #059669;
+                          font-weight: 700;
+                          font-size: 14px;
+                        "
+                        >20</span
+                      >
+                    </label>
+                    <input
+                      type="range"
+                      id="wordSpacingInput"
+                      min="0"
+                      max="30"
+                      value="20"
+                      step="1"
+                      style="
+                        width: clamp(220px, 75%, 360px);
+                        height: 6px;
+                        cursor: pointer;
+                        accent-color: #059669;
+                        margin: 0;
+                        display: block;
+                      "
+                    />
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        width: clamp(220px, 75%, 360px);
+                        margin-top: 6px;
+                        font-size: 11px;
+                        color: #999;
+                        line-height: 1;
+                      "
+                    >
+                      <span>0</span><span>15</span><span>30</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Section (below text input) -->
+        <div class="form-section result-section-inline">
+          <div style="margin-bottom: 10px">
+            <h3 style="margin: 0; font-size: 16px">Kết quả chuyển đổi</h3>
+          </div>
+          <div
+            class="result-images-inline"
+            style="max-height: 150px; overflow-y: auto"
+          >
+            <!-- Results will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Import Pattern</h3>
+          <div
+            id="availablePatternsList"
+            style="
+              display: flex;
+              gap: 15px;
+              flex-wrap: nowrap;
+              padding: 15px;
+              background: #f8f9fa;
+              border-radius: 8px;
+              border: 1px solid #e1e5e9;
+              min-height: 100px;
+              overflow-x: auto;
+              overflow-y: hidden;
+            "
+          >
+            <!-- Patterns will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 15px;
+            "
+          >
+            <h3 style="margin: 0">Pattern list</h3>
+            <div
+              class="hint"
+              style="margin: 0; margin-top: 5px; font-style: normal"
+            >
+              (Hold and drag to reorder)
+            </div>
+          </div>
+          <div id="patternSetsList"></div>
+        </div>
+        <% if (data && data.error) { %>
+        <div
+          class="result-section"
+          style="background: #fee; border-color: #fcc"
+        >
+          <h3 style="color: #c33">Lỗi</h3>
+          <p><%= data.error %></p>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Available Patterns Modal -->
+      <div class="modal-overlay" id="availablePatternsModal">
+        <div class="modal-content" style="max-width: 800px">
+          <div class="modal-header">
+            <h2>Import Pattern</h2>
+            <button class="modal-close" id="closeAvailablePatternsBtn">
+              &times;
+            </button>
+          </div>
+          <div style="padding: 20px; max-height: 70vh; overflow-y: auto">
+            <div class="hint" style="margin-bottom: 20px">
+              Chọn các pattern để thêm vào danh sách. Patterns đã có trong danh
+              sách sẽ được đánh dấu.
+            </div>
+            <div id="availablePatternsList"></div>
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="modal-btn modal-btn-secondary"
+              id="closeAvailablePatternsBtn2"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pattern Form Modal -->
+      <div class="modal-overlay" id="patternFormModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Create Pattern</h2>
+            <button class="modal-close" id="closePatternFormBtn">
+              &times;
+            </button>
+          </div>
+          <form id="patternForm">
+            <div class="modal-form-group">
+              <label for="patternNameInput">Tên Pattern:</label>
+              <input
+                type="text"
+                id="patternNameInput"
+                placeholder="Nhập tên pattern"
+                required
+              />
+            </div>
+            <div class="modal-form-group">
+              <label>Pattern đã lưu</label>
+              <div class="pattern-preview" id="patternPreview">
+                <div class="pattern-preview-empty">
+                  Chưa có pattern nào đã được lưu.
+                </div>
+              </div>
+            </div>
+            <div class="modal-form-group">
+              <label for="modalUploadImageInput">Chọn Folder Pattern:</label>
+              <input
+                type="file"
+                id="modalUploadImageInput"
+                accept="image/*"
+                multiple
+                webkitdirectory
+                directory
+                mozdirectory
+                style="margin-bottom: 10px"
+              />
+              <div
+                id="modalUploadStatus"
+                class="hint"
+                style="margin-top: 10px; display: none"
+              ></div>
+              <div
+                id="modalUploadProgress"
+                style="margin-top: 10px; display: none"
+              >
+                <div
+                  style="
+                    background: #f0f0f0;
+                    border-radius: 8px;
+                    height: 20px;
+                    overflow: hidden;
+                    margin-bottom: 5px;
+                  "
+                >
+                  <div
+                    id="modalProgressBar"
+                    style="
+                      background: linear-gradient(
+                        135deg,
+                        #667eea 0%,
+                        #764ba2 100%
+                      );
+                      height: 100%;
+                      width: 0%;
+                      transition: width 0.3s ease;
+                    "
+                  ></div>
+                </div>
+                <div
+                  id="modalProgressText"
+                  style="font-size: 12px; color: #666; text-align: center"
+                ></div>
+              </div>
+            </div>
+            <div class="modal-form-group">
+              <label>Preview Pattern:</label>
+              <div class="pattern-preview" id="uploadPreview">
+                <div class="pattern-preview-empty">
+                  Chưa có pattern nào được upload. Hãy upload folder pattern để
+                  xem preview.
+                </div>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="modal-btn modal-btn-secondary"
+                id="cancelPatternFormBtn"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                class="modal-btn modal-btn-primary"
+                id="savePatternBtn"
+              >
+                💾 Lưu Pattern
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
