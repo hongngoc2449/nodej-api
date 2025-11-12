@@ -1,9 +1,15 @@
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+<link
+  rel="stylesheet"
+  href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+/>
 
 <style>
   :root {
-    --main-color: #0a8592;
+    --main-color: #00a3f7;
   }
 
   body {
@@ -58,9 +64,9 @@
   } */
 
   .sidebar .nav-link.active {
-    background-color: var(--main-color); /* Màu nền vàng khi active */
+    background-color: var(--main-color); /* Màu nền xanh khi active */
     color: #ffffff; /* Màu chữ trắng */
-    box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.3); /* Hiệu ứng shadow */
+    box-shadow: 0 4px 8px -4px rgba(0, 163, 247, 0.3); /* Hiệu ứng shadow với màu mới */
     border-radius: 10px; /* Bo góc mềm mại */
   }
 
@@ -457,25 +463,67 @@
 
 <div class="sidebar flex-column" style="height: 100vh">
   <div>
-    <div class="text-center mb-4 d-flex align-items-center justify-content-center">
+    <div
+      class="text-center mb-4 d-flex align-items-center justify-content-center"
+    >
       <!-- <img src="/imgthumb/logo.webp" alt="Icon" class="mr-2" style="width: 50px; height: 50px" /> -->
-      <span class="h4 mb-0" style="font-size: 1.25rem; font-weight: 700 !important"
-        ><span style="color: var(--main-color)">Ascend</span><span style="color: #7c8084">Global</span></span
+      <span
+        class="h4 mb-0"
+        style="font-size: 1.25rem; font-weight: 700 !important"
+        ><span style="color: var(--main-color)">Ascend</span
+        ><span style="color: #7c8084">Global</span></span
       >
     </div>
-    <a href="/" class="nav-link <%= activePage === 'home' ? 'active' : '' %>" data-page="home"
+    <a
+      href="/"
+      class="nav-link <%= activePage === 'home' ? 'active' : '' %>"
+      data-page="home"
       ><i class="fas fa-home"></i> Home</a
+    >
+    <a
+      href="/dashboard"
+      class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>"
+      data-page="dashboard"
+      ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+    >
+    <a
+      href="/account"
+      class="nav-link <%= activePage === 'account' ? 'active' : '' %>"
+      data-page="account"
+      ><i class="fas fa-user-circle"></i> Account</a
+    >
+    <a
+      href="/shop"
+      class="nav-link <%= activePage === 'shop' ? 'active' : '' %>"
+      data-page="shop"
+      ><i class="fas fa-store"></i> Shop</a
+    >
+    <a
+      href="/order"
+      class="nav-link <%= activePage === 'order' ? 'active' : '' %>"
+      data-page="order"
+      ><i class="fas fa-shopping-bag"></i> Order</a
     >
     <% if (!user.kind.includes("user") ) { %>
     <!--  -->
     <hr class="menu-divider" />
-    <% if (user.kind === "admin" || user.kind === "leader" || user.kind === "seller") { %>
-    <a href="#warehouseSubmenu" class="nav-link collapsed has-submenu" data-toggle="collapse" aria-expanded="false">
+    <% if (user.kind === "admin" || user.kind === "leader" || user.kind ===
+    "seller") { %>
+    <a
+      href="#warehouseSubmenu"
+      class="nav-link collapsed has-submenu"
+      data-toggle="collapse"
+      aria-expanded="false"
+    >
       <i class="fas fa-warehouse"></i> Warehouse
     </a>
     <div class="collapse" id="warehouseSubmenu">
       <div class="collapse-inner">
-        <a href="/sku-list" class="nav-link <%= activePage === 'sku-list' ? 'active' : '' %>" data-page="sku-list">
+        <a
+          href="/sku-list"
+          class="nav-link <%= activePage === 'sku-list' ? 'active' : '' %>"
+          data-page="sku-list"
+        >
           <i class="fas fa-tags"></i> Skus
         </a>
         <a
@@ -484,40 +532,64 @@
           data-page="product-list"
           ><i class="fas fa-cubes"></i> Products</a
         >
-        <a href="/log" class="nav-link <%= activePage === 'warehouse-log' ? 'active' : '' %>" data-page="warehouse-log"
+        <a
+          href="/log"
+          class="nav-link <%= activePage === 'warehouse-log' ? 'active' : '' %>"
+          data-page="warehouse-log"
           ><i class="fas fa-history"></i> Logs</a
         >
       </div>
     </div>
-    <% } %> <% } %> <% if (user.kind && !user.kind.includes("design") && !user.kind.includes("user") ) { %>
-    <a href="/orders-process" class="nav-link <%= activePage === 'orders-process' ? 'active' : '' %>"
+    <% } %> <% } %> <% if (user.kind && !user.kind.includes("design") &&
+    !user.kind.includes("user") ) { %>
+    <a
+      href="/orders-process"
+      class="nav-link <%= activePage === 'orders-process' ? 'active' : '' %>"
       ><i class="fas fa-shopping-cart"></i> Orders Process</a
     >
-    <a href="/tracking" class="nav-link <%= activePage === 'tracking' ? 'active' : '' %>"
+    <a
+      href="/tracking"
+      class="nav-link <%= activePage === 'tracking' ? 'active' : '' %>"
       ><i class="fas fa-truck"></i> Tracking</a
     >
     <% } %> <% if (user.kind === "admin" || user.kind === "leader") { %>
     <hr class="menu-divider" />
-    <a href="/chart" class="nav-link <%= activePage === 'chart' ? 'active' : '' %>"
+    <a
+      href="/chart"
+      class="nav-link <%= activePage === 'chart' ? 'active' : '' %>"
       ><i class="fas fa-chart-bar"></i> Chart</a
     >
-    <a href="/user" class="nav-link <%= activePage === 'user' ? 'active' : '' %>" data-page="settings"
+    <a
+      href="/user"
+      class="nav-link <%= activePage === 'user' ? 'active' : '' %>"
+      data-page="settings"
       ><i class="fas fa-user"></i> Users</a
     >
-    <a href="/add-shop" class="nav-link <%= activePage === 'add-shop' ? 'active' : '' %>" data-page="stores"
+    <a
+      href="/add-shop"
+      class="nav-link <%= activePage === 'add-shop' ? 'active' : '' %>"
+      data-page="stores"
       ><i class="fas fa-store"></i> Add Stores</a
     >
-    <a href="/set-shop" class="nav-link <%= activePage === 'set-shop' ? 'active' : '' %>" data-page="stores"
+    <a
+      href="/set-shop"
+      class="nav-link <%= activePage === 'set-shop' ? 'active' : '' %>"
+      data-page="stores"
       ><i class="fas fa-user-check"></i> Set Stores</a
     >
 
     <% } %> <% if (!user.kind.includes("user") ) { %>
     <hr class="menu-divider" />
-    <a href="/upfile" class="nav-link <%= activePage === 'upfile' ? 'active' : '' %>" data-page="upfile"
+    <a
+      href="/upfile"
+      class="nav-link <%= activePage === 'upfile' ? 'active' : '' %>"
+      data-page="upfile"
       ><i class="fas fa-upload"></i> Up File</a
     >
     <!-- <a href="/add-design" class="nav-link <%= activePage === 'add-design' ? 'active' : '' %>" data-page="add-design"><i class="fas fa-file-import"></i> Add Design</a> -->
-    <a href="/order?idorder=" class="nav-link" data-page="help"><i class="fas fa-search"></i> Search</a>
+    <a href="/order?idorder=" class="nav-link" data-page="help"
+      ><i class="fas fa-search"></i> Search</a
+    >
     <% } %>
   </div>
   <div class="user-info mt-auto">

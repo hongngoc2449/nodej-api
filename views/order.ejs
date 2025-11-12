@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders</title>
+    <link rel="stylesheet" href="/css/order.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="table-container">
+        <!-- Header Section -->
+        <div class="order-header-section">
+          <div class="header-top">
+            <div class="header-left">
+              <h1 class="page-title">Orders</h1>
+              <div class="date-range-selector">
+                <span id="dateRange">Jan 1 - Jan 30, 2024</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            <div class="header-actions">
+              <button class="btn-action">Export</button>
+              <button class="btn-action">
+                More actions
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <button class="btn-primary">Create order</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">21</div>
+            <div class="stat-trend positive">
+              <i class="fas fa-arrow-up"></i>
+              <span>25.2% last week</span>
+            </div>
+            <div class="stat-chart">📈</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Order items over time</div>
+            <div class="stat-value">15</div>
+            <div class="stat-trend positive">
+              <i class="fas fa-arrow-up"></i>
+              <span>18.2% last week</span>
+            </div>
+            <div class="stat-chart">📈</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Returns Orders</div>
+            <div class="stat-value">0</div>
+            <div class="stat-trend negative">
+              <i class="fas fa-arrow-down"></i>
+              <span>-1.2% last week</span>
+            </div>
+            <div class="stat-chart">📉</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Fulfilled orders over time</div>
+            <div class="stat-value">12</div>
+            <div class="stat-trend positive">
+              <i class="fas fa-arrow-up"></i>
+              <span>12.2% last week</span>
+            </div>
+            <div class="stat-chart">📈</div>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs-section">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="unfulfilled">Unfulfilled</button>
+            <button class="filter-tab" data-filter="unpaid">Unpaid</button>
+            <button class="filter-tab" data-filter="open">Open</button>
+            <button class="filter-tab" data-filter="closed">Closed</button>
+            <button class="filter-tab-add">
+              <i class="fas fa-plus"></i>
+              Add
+            </button>
+          </div>
+          <div class="filter-actions">
+            <button class="filter-action-btn">
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="filter-action-btn">
+              <i class="fas fa-filter"></i>
+            </button>
+            <button class="filter-action-btn">
+              <i class="fas fa-sort"></i>
+            </button>
+            <button class="filter-action-btn">
+              <i class="fas fa-ellipsis-h"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-section">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📋</div>
+            <div class="empty-message">No Rows To Show</div>
+          </div>
+          <div class="table-wrapper" id="tableWrapper">
+            <table class="orders-table" id="ordersTable">
+              <thead>
+                <tr>
+                  <th>
+                    <input type="checkbox" id="selectAll" />
+                  </th>
+                  <th>Order <i class="fas fa-sort"></i></th>
+                  <th>Date <i class="fas fa-sort"></i></th>
+                  <th>Customer</th>
+                  <th>Payment</th>
+                  <th>Total <i class="fas fa-sort"></i></th>
+                  <th>Delivery</th>
+                  <th>Items</th>
+                  <th>Fulfilment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Function to toggle empty state and table
+      function toggleEmptyState() {
+        const tableBody = document.getElementById('ordersTableBody');
+        const emptyState = document.getElementById('emptyState');
+        const rows = tableBody.querySelectorAll('tr:not([style*="display: none"])');
+        
+        if (rows.length === 0) {
+          emptyState.style.display = 'flex';
+        } else {
+          emptyState.style.display = 'none';
+        }
+      }
+
+      // Filter tabs functionality
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          const filter = this.getAttribute('data-filter');
+          // TODO: Implement filter logic
+          console.log('Filter:', filter);
+        });
+      });
+
+      // Select all checkbox
+      document.getElementById('selectAll')?.addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('#ordersTableBody input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+      });
+
+      // Initialize empty state on load
+      toggleEmptyState();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List Shops</title>
+    <link rel="stylesheet" href="/css/shop.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="table-container">
+        <!-- Header Section -->
+        <div class="shop-header-section">
+          <div class="header-left">
+            <h1 class="page-title">List Shops</h1>
+            <div class="breadcrumb">
+              <i class="fas fa-home"></i>
+              <span>>></span>
+              <span>List Shops</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search..." />
+            <i class="fas fa-search search-icon"></i>
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-section">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📋</div>
+            <div class="empty-message">No Rows To Show</div>
+          </div>
+          <div class="table-wrapper" id="tableWrapper">
+            <table class="shops-table" id="shopsTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Account Name</th>
+                  <th>Shop Name</th>
+                  <th>Title</th>
+                  <th>Listing Count</th>
+                  <th>Digital Count</th>
+                  <th>Use New Endpoints</th>
+                  <th>Created At</th>
+                  <th>Updated At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="shopsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Function to toggle empty state and table
+      function toggleEmptyState() {
+        const tableBody = document.getElementById("shopsTableBody");
+        const emptyState = document.getElementById("emptyState");
+        const tableWrapper = document.getElementById("tableWrapper");
+        const rows = tableBody.querySelectorAll(
+          'tr:not([style*="display: none"])'
+        );
+        
+        if (rows.length === 0) {
+          emptyState.style.display = "flex";
+          tableWrapper.style.display = "none";
+        } else {
+          emptyState.style.display = "none";
+          tableWrapper.style.display = "block";
+        }
+      }
+
+      // Function to load shops from API
+      async function loadShops() {
+        try {
+          const response = await fetch("/api/shops");
+          const result = await response.json();
+
+          if (result.success && result.shops) {
+            renderShopsTable(result.shops);
+          }
+        } catch (error) {
+          console.error("Error loading shops:", error);
+        }
+      }
+
+      // Function to render shops table
+      function renderShopsTable(shops) {
+        const tableBody = document.getElementById("shopsTableBody");
+        const emptyState = document.getElementById("emptyState");
+        const tableWrapper = document.getElementById("tableWrapper");
+
+        if (!shops || shops.length === 0) {
+          emptyState.style.display = "flex";
+          tableWrapper.style.display = "none";
+          return;
+        }
+
+        emptyState.style.display = "none";
+        tableWrapper.style.display = "block";
+
+        tableBody.innerHTML = shops
+          .map((shop, index) => {
+            const createdAt = shop.createdAt
+              ? new Date(shop.createdAt).toLocaleDateString("vi-VN")
+              : "N/A";
+            const updatedAt = shop.updatedAt
+              ? new Date(shop.updatedAt).toLocaleDateString("vi-VN")
+              : "N/A";
+            const accountName = shop.accountId
+              ? shop.accountId.loginName || shop.accountName || ""
+              : shop.accountName || "";
+
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${accountName}</td>
+                <td>${shop.shop_name || ""}</td>
+                <td>${shop.title || "N/A"}</td>
+                <td>${shop.listingCount || 0}</td>
+                <td>${shop.digitalCount || 0}</td>
+                <td>${shop.useNewEndpoints ? "Yes" : "No"}</td>
+                <td>${createdAt}</td>
+                <td>${updatedAt}</td>
+                <td class="actions-cell">
+                  <button class="action-btn edit" onclick="editShop('${shop._id}')">Edit</button>
+                  <button class="action-btn delete" onclick="deleteShop('${shop._id}')">Delete</button>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        toggleEmptyState();
+      }
+
+      // Edit shop function
+      function editShop(shopId) {
+        // TODO: Implement edit functionality
+        console.log("Edit shop:", shopId);
+        alert("Edit functionality coming soon!");
+      }
+
+      // Delete shop function
+      async function deleteShop(shopId) {
+        if (!confirm("Are you sure you want to delete this shop?")) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/shops/${shopId}`, {
+            method: "DELETE",
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            loadShops(); // Reload table
+          } else {
+            alert("Error deleting shop: " + result.message);
+          }
+        } catch (error) {
+          console.error("Error deleting shop:", error);
+          alert("Error deleting shop");
+        }
+      }
+
+      // Search functionality
+      document
+        .getElementById("searchInput")
+        ?.addEventListener("input", function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll("#shopsTableBody tr");
+          const emptyState = document.getElementById("emptyState");
+          const tableWrapper = document.getElementById("tableWrapper");
+        
+          if (searchTerm === "") {
+            rows.forEach((row) => (row.style.display = ""));
+          toggleEmptyState();
+          return;
+        }
+
+        let hasVisibleRows = false;
+          rows.forEach((row) => {
+          const text = row.textContent.toLowerCase();
+          if (text.includes(searchTerm)) {
+              row.style.display = "";
+            hasVisibleRows = true;
+            } else {
+              row.style.display = "none";
+            }
+          });
+
+          if (hasVisibleRows) {
+            emptyState.style.display = "none";
+            tableWrapper.style.display = "block";
+          } else {
+            emptyState.style.display = "flex";
+            tableWrapper.style.display = "none";
+        }
+      });
+
+      // Load shops when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        loadShops();
+      });
+    </script>
+  </body>
+</html>
+

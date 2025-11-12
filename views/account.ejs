@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List Accounts</title>
+    <link rel="stylesheet" href="/css/account.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="table-container">
+        <!-- Header Section -->
+        <div class="account-header-section">
+          <div class="header-left">
+            <h1 class="page-title">List Accounts</h1>
+            <div class="breadcrumb">
+              <i class="fas fa-home"></i>
+              <span>>></span>
+              <span>List Accounts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <button class="btn-add-update" id="btnAddUpdate">
+            <i class="fas fa-plus"></i> Add or Update
+          </button>
+          <div class="search-container">
+            <input
+              type="text"
+              class="search-input"
+              id="searchInput"
+              placeholder="Search..."
+            />
+            <i class="fas fa-search search-icon"></i>
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-section">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📋</div>
+            <div class="empty-message">No Rows To Show</div>
+          </div>
+          <div class="table-wrapper" id="tableWrapper">
+            <table class="accounts-table" id="accountsTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Login Name</th>
+                  <th>Primary Email</th>
+                  <th>Use New Endpoints</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accountsTableBody">
+                <!-- Accounts will be loaded dynamically from API -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Function to toggle empty state and table
+      function toggleEmptyState() {
+        const tableBody = document.getElementById("accountsTableBody");
+        const emptyState = document.getElementById("emptyState");
+        const rows = tableBody.querySelectorAll(
+          'tr:not([style*="display: none"])'
+        );
+
+        if (rows.length === 0) {
+          emptyState.style.display = "flex";
+        } else {
+          emptyState.style.display = "none";
+        }
+      }
+
+      // Search functionality
+      document
+        .getElementById("searchInput")
+        ?.addEventListener("input", function (e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll("#accountsTableBody tr");
+          const emptyState = document.getElementById("emptyState");
+          const tableWrapper = document.getElementById("tableWrapper");
+
+          if (searchTerm === "") {
+            rows.forEach((row) => (row.style.display = ""));
+            toggleEmptyState();
+            return;
+          }
+
+          let hasVisibleRows = false;
+          rows.forEach((row) => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+              row.style.display = "";
+              hasVisibleRows = true;
+            } else {
+              row.style.display = "none";
+            }
+          });
+
+          if (hasVisibleRows) {
+            emptyState.style.display = "none";
+          } else {
+            emptyState.style.display = "flex";
+          }
+        });
+
+      // Add or Update button handler
+      document
+        .getElementById("btnAddUpdate")
+        ?.addEventListener("click", function () {
+          // Disable button để tránh double click
+          const button = this;
+          button.disabled = true;
+          button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+          // URL redirect
+          const etsyOAuthUrl =
+            "https://www.etsy.com/oauth2/signin?from_page=%2Foauth%2Fconnect%3Fresponse_type%3Dcode%26client_id%3Dtsar32hal2r3tdlqjgndgwtu%26redirect_uri%3Dhttps%3A%2F%2Fapp.sellerwix.com%2Fstores%2Foauth%2Fetsy%26scope%3Daddress_r%2520address_w%2520billing_r%2520cart_r%2520cart_w%2520email_r%2520favorites_r%2520favorites_w%2520feedback_r%2520listings_d%2520listings_r%2520listings_w%2520profile_r%2520profile_w%2520recommend_r%2520recommend_w%2520shops_r%2520shops_w%2520transactions_r%2520transactions_w%26state%3Dsuperstate%26code_challenge%3DjLXpuGzyS2yieieiB6fsUIc6th2-wnaoeFnMqklCB4U%26code_challenge_method%3DS256&lp=1&show_social_sign_in=1&is_from_etsyapp=0&initial_state=sign-in&client_id=tsar32hal2r3tdlqjgndgwtu";
+
+          // Gửi request tạo mock account với keepalive để đảm bảo request được gửi đi
+          // ngay cả khi trang đã redirect
+          fetch("/api/accounts/create-mock", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            keepalive: true, // Đảm bảo request được gửi ngay cả khi trang redirect
+          }).catch((error) => {
+            console.error("Error creating mock account:", error);
+          });
+
+          // Redirect ngay lập tức, không đợi API response
+          // Sử dụng window.location.replace để không lưu vào history
+          // và tránh việc user có thể quay lại bằng nút back
+          window.location.replace(etsyOAuthUrl);
+        });
+
+      // Function to load accounts from API
+      async function loadAccounts() {
+        try {
+          const response = await fetch("/api/accounts");
+          const result = await response.json();
+
+          if (result.success && result.accounts) {
+            renderAccountsTable(result.accounts);
+          }
+        } catch (error) {
+          console.error("Error loading accounts:", error);
+        }
+      }
+
+      // Function to render accounts table
+      function renderAccountsTable(accounts) {
+        const tableBody = document.getElementById("accountsTableBody");
+        const emptyState = document.getElementById("emptyState");
+        const tableWrapper = document.getElementById("tableWrapper");
+
+        if (!accounts || accounts.length === 0) {
+          emptyState.style.display = "flex";
+          tableWrapper.style.display = "none";
+          return;
+        }
+
+        emptyState.style.display = "none";
+        tableWrapper.style.display = "block";
+
+        tableBody.innerHTML = accounts
+          .map((account, index) => {
+            const createdAt = account.createdAt
+              ? new Date(account.createdAt).toLocaleDateString("vi-VN")
+              : "N/A";
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${account.loginName || ""}</td>
+                <td>${account.primaryEmail || ""}</td>
+                <td>${account.useNewEndpoints ? "Yes" : "No"}</td>
+                <td>${createdAt}</td>
+                <td class="actions-cell">
+                  <button class="action-btn edit" onclick="editAccount('${
+                    account._id
+                  }')">Edit</button>
+                  <button class="action-btn delete" onclick="deleteAccount('${
+                    account._id
+                  }')">Delete</button>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        toggleEmptyState();
+      }
+
+      // Edit account function
+      function editAccount(accountId) {
+        // TODO: Implement edit functionality
+        console.log("Edit account:", accountId);
+        alert("Edit functionality coming soon!");
+      }
+
+      // Delete account function
+      async function deleteAccount(accountId) {
+        if (!confirm("Are you sure you want to delete this account?")) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/accounts/${accountId}`, {
+            method: "DELETE",
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            loadAccounts(); // Reload table
+          } else {
+            alert("Error deleting account: " + result.message);
+          }
+        } catch (error) {
+          console.error("Error deleting account:", error);
+          alert("Error deleting account");
+        }
+      }
+
+      // Load accounts when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        loadAccounts();
+      });
+
+      // Initialize empty state on load (will be handled by loadAccounts)
+    </script>
+  </body>
+</html>

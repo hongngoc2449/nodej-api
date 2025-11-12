@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="table-container">
+        <div class="dashboard-header">
+        <h1>Dashboard</h1>
+          <p>Thống kê và tổng quan hệ thống</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="dashboard-cards">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <p class="dashboard-card-title">Tổng đơn hàng</p>
+              <i class="fas fa-shopping-bag dashboard-card-icon"></i>
+            </div>
+            <h2 class="dashboard-card-value" id="totalOrders">-</h2>
+            <div class="dashboard-card-footer">
+              <i class="fas fa-arrow-up"></i> Từ tất cả accounts
+            </div>
+          </div>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <p class="dashboard-card-title">Tổng cửa hàng</p>
+              <i class="fas fa-store dashboard-card-icon"></i>
+            </div>
+            <h2 class="dashboard-card-value" id="totalShops">-</h2>
+            <div class="dashboard-card-footer">
+              <i class="fas fa-arrow-up"></i> Đã kết nối
+            </div>
+          </div>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <p class="dashboard-card-title">Tổng người dùng</p>
+              <i class="fas fa-users dashboard-card-icon"></i>
+            </div>
+            <h2 class="dashboard-card-value" id="totalUsers">-</h2>
+            <div class="dashboard-card-footer">
+              <i class="fas fa-arrow-up"></i> Đang hoạt động
+            </div>
+          </div>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <p class="dashboard-card-title">Tổng accounts</p>
+              <i class="fas fa-user-circle dashboard-card-icon"></i>
+            </div>
+            <h2 class="dashboard-card-value" id="totalAccounts">-</h2>
+            <div class="dashboard-card-footer">
+              <i class="fas fa-arrow-up"></i> Etsy accounts
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Load dashboard stats
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          const response = await fetch("/api/dashboard/stats");
+          const result = await response.json();
+
+          if (result.success && result.stats) {
+            const stats = result.stats;
+            document.getElementById("totalOrders").textContent =
+              stats.totalOrders || 0;
+            document.getElementById("totalShops").textContent =
+              stats.totalShops || 0;
+            document.getElementById("totalUsers").textContent =
+              stats.totalUsers || 0;
+            document.getElementById("totalAccounts").textContent =
+              stats.totalAccounts || 0;
+          } else {
+            setDefaultStats();
+          }
+        } catch (error) {
+          console.error("Error loading dashboard stats:", error);
+          setDefaultStats();
+        }
+      });
+
+      function setDefaultStats() {
+        document.getElementById("totalOrders").textContent = "0";
+        document.getElementById("totalShops").textContent = "0";
+        document.getElementById("totalUsers").textContent = "0";
+        document.getElementById("totalAccounts").textContent = "0";
+      }
+    </script>
+  </body>
+</html>

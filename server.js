@@ -37,6 +37,8 @@ if (process.env.MONGODB_URI) {
 }
 
 const session = require("express-session");
+const passport = require("passport");
+
 app.use(
   session({
     secret: "your_secret_key",
@@ -52,6 +54,10 @@ app.use(
     },
   })
 );
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Use routers (placed AFTER session so req.session is available)
 app.use(router);
@@ -74,7 +80,30 @@ app.get("/pattern", checkAuth, async (req, res) => {
   });
 });
 
+// Home page route (public landing page)
 app.get("/", (req, res) => {
+  try {
+    res.render("home", {
+      title: "OwlFlow - Intelligent Order Management & Fulfillment Platform",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// App home route (for authenticated users - redirect to dashboard)
+app.get("/app", checkAuth, (req, res) => {
+  try {
+    res.redirect("/dashboard");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// API info endpoint (for API documentation)
+app.get("/api/info", (req, res) => {
   res.json({
     message: "Node.js API Server",
     version: "1.0.0",
