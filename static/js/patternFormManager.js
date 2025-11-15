@@ -357,39 +357,62 @@ function initPatternFormHandlers() {
       const sanitized = sanitizeFolderName(patternName);
       const folderName = `pattern/${sanitized}`;
 
-      // Upload all files to Digital Ocean
-      const uploadedUrls = [];
+      // Step 1: Convert all images to WebP in parallel
+      if (modalUploadStatus) {
+        modalUploadStatus.textContent = `🔄 Đang chuyển đổi ${pendingPatternFiles.length} ảnh sang WebP...`;
+        modalUploadStatus.style.color = "#666";
+      }
+
+      const filesToConvert = pendingPatternFiles.map((item) => item.file);
+      const webpFiles = await convertImagesToWebPBatch(
+        filesToConvert,
+        0.9,
+        (current, total) => {
+          const progress = (current / total) * 100;
+          if (modalProgressBar) modalProgressBar.style.width = progress + "%";
+          if (modalProgressText)
+            modalProgressText.textContent = `Chuyển đổi: ${current} / ${total}`;
+        }
+      );
+
+      // Step 2: Prepare file items for batch upload
+      const fileItems = pendingPatternFiles.map((item, index) => ({
+        webpFile: webpFiles[index],
+        originalName: item.file.name,
+        char: item.char,
+      }));
+
+      // Step 3: Upload all files in parallel batches (concurrency: 3)
+      if (modalUploadStatus) {
+        modalUploadStatus.textContent = `📤 Đang upload ${pendingPatternFiles.length} ảnh lên server...`;
+      }
+
+      let uploadedUrls = [];
       let successCount = 0;
       let failCount = 0;
 
       try {
-        for (let i = 0; i < pendingPatternFiles.length; i++) {
-          const item = pendingPatternFiles[i];
-          try {
-            const imageUrl = await uploadImage(item.file, folderName);
-            if (imageUrl) {
-              uploadedUrls.push({
-                char: item.char,
-                fileName: item.file.name,
-                url: imageUrl,
-              });
-              successCount++;
-            } else {
-              failCount++;
-            }
-          } catch (error) {
-            console.error("Upload error for", item.file.name, ":", error);
-            failCount++;
+        const uploadResults = await uploadImagesBatch(
+          fileItems,
+          folderName,
+          3, // Upload 3 files concurrently
+          (current, total) => {
+            const progress = (current / total) * 100;
+            if (modalProgressBar) modalProgressBar.style.width = progress + "%";
+            if (modalProgressText)
+              modalProgressText.textContent = `Upload: ${current} / ${total}`;
           }
+        );
 
-          // Update progress
-          const progress = ((i + 1) / pendingPatternFiles.length) * 100;
-          if (modalProgressBar) modalProgressBar.style.width = progress + "%";
-          if (modalProgressText)
-            modalProgressText.textContent = `${i + 1} / ${
-              pendingPatternFiles.length
-            }`;
-        }
+        // Transform results to match expected format
+        uploadedUrls = uploadResults.map((result) => ({
+          char: result.char,
+          fileName: result.fileName,
+          url: result.url,
+        }));
+
+        successCount = uploadResults.filter((item) => item.success).length;
+        failCount = uploadResults.filter((item) => !item.success).length;
 
         // Hide progress
         if (modalUploadProgress) modalUploadProgress.style.display = "none";
@@ -423,6 +446,31 @@ function initPatternFormHandlers() {
           url: img.url,
         }));
 
+        // Step 4: Create and upload preview image
+        let previewImageUrl = null;
+        if (typeof mergePatternImages === "function" && patternImages.length > 0) {
+          try {
+            if (modalUploadStatus) {
+              modalUploadStatus.textContent = "🖼️ Đang tạo preview image...";
+              modalUploadStatus.style.color = "#666";
+            }
+
+            // Create merged preview image
+            const previewImageFile = await mergePatternImages(patternImages, 150, 2);
+            
+            // Upload preview image
+            previewImageUrl = await uploadWebPFile(previewImageFile, folderName);
+            
+            if (previewImageUrl && modalUploadStatus) {
+              modalUploadStatus.textContent = "✅ Đã tạo preview image";
+              modalUploadStatus.style.color = "#28a745";
+            }
+          } catch (error) {
+            console.warn("Failed to create preview image:", error);
+            // Continue without preview image
+          }
+        }
+
         // Add to patternSets
         const id = `uploaded_${Date.now()}_${Math.random()
           .toString(36)
@@ -432,23 +480,31 @@ function initPatternFormHandlers() {
           name: patternName,
           source: "uploaded",
           images: patternImages,
+          previewImage: previewImageUrl,
         });
 
         // Add to active list automatically
         activePatternSetIds.add(id);
 
-      // Save to MongoDB via API
-      if (typeof savePatternSetToServer === "function") {
-        savePatternSetToServer({ name: patternName, images: patternImages }).then((saved) => {
-          if (saved && saved.id) {
-            // Optionally replace the just-pushed local set with the server-saved ID
-            const idx = patternSets.findIndex((s) => s.name === patternName && s.source === "uploaded");
-            if (idx >= 0) {
-              patternSets[idx].id = saved.id;
+        // Save to MongoDB via API
+        if (typeof savePatternSetToServer === "function") {
+          savePatternSetToServer({ 
+            name: patternName, 
+            images: patternImages,
+            previewImage: previewImageUrl 
+          }).then((saved) => {
+            if (saved && saved.id) {
+              // Optionally replace the just-pushed local set with the server-saved ID
+              const idx = patternSets.findIndex((s) => s.name === patternName && s.source === "uploaded");
+              if (idx >= 0) {
+                patternSets[idx].id = saved.id;
+                if (saved.previewImage) {
+                  patternSets[idx].previewImage = saved.previewImage;
+                }
+              }
             }
-          }
-        });
-      }
+          });
+        }
 
         // Invalidate cache
         invalidateCharMapForSet(id);
@@ -498,6 +554,11 @@ function initPatternFormHandlers() {
         alert("❌ Có lỗi xảy ra khi lưu pattern: " + error.message);
         if (saveBtn) saveBtn.disabled = false;
         if (cancelBtn) cancelBtn.disabled = false;
+        if (modalUploadProgress) modalUploadProgress.style.display = "none";
+        if (modalUploadStatus) {
+          modalUploadStatus.textContent = "❌ Có lỗi xảy ra khi lưu pattern.";
+          modalUploadStatus.style.color = "#dc3545";
+        }
       }
     });
   }

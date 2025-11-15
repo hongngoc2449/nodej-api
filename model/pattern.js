@@ -23,6 +23,7 @@ const PatternSetSchema = new mongoose.Schema(
     },
     createdByUsername: { type: String, default: "" },
     images: { type: [PatternImageSchema], default: [] },
+    previewImage: { type: String, default: null }, // URL of merged preview image
   },
   { timestamps: true }
 );

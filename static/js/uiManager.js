@@ -115,24 +115,56 @@ function rebuildSetsList() {
     .map((set) => {
       const count = set.images ? set.images.length : 0;
 
-      // Get images for display (show all, allow horizontal scrolling)
-      const images = set.images || [];
-      const imagesHtml = images
-        .map((img) => {
-          const src = getImageSrc(img);
-          return `
-            <div class="pattern-set-image-item">
-              <img src="${src}" alt="${img.char}" />
-              <span class="pattern-set-char">${img.char}</span>
-            </div>
-          `;
-        })
-        .join("");
-
       // Check if this is the last pattern in active list
       const isLastPattern = activePatterns.length === 1;
       // Can delete if not the last pattern (allow deleting builtin too)
       const canDelete = !isLastPattern;
+      
+      // Use preview image if available, otherwise show individual images
+      let previewHtml = "";
+      if (set.previewImage) {
+        // Show preview image with height 150px
+        previewHtml = `
+          <div class="pattern-set-preview" style="
+            width: 100%;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e1e5e9;
+          ">
+            <img 
+              src="${set.previewImage}" 
+              alt="${set.name} preview" 
+              style="
+                max-width: 100%;
+                max-height: 150px;
+                height: 150px;
+                width: auto;
+                object-fit: contain;
+              "
+            />
+          </div>
+        `;
+      } else {
+        // Fallback to individual images if no preview
+        const images = set.images || [];
+        const imagesHtml = images
+          .map((img) => {
+            const src = getImageSrc(img);
+            return `
+              <div class="pattern-set-image-item">
+                <img src="${src}" alt="${img.char}" />
+                <span class="pattern-set-char">${img.char}</span>
+              </div>
+            `;
+          })
+          .join("");
+        previewHtml = `<div class="pattern-set-images">${imagesHtml}</div>`;
+      }
       
       return `
         <div class="pattern-set-card" draggable="true" data-set-id="${set.id}">
@@ -180,9 +212,7 @@ function rebuildSetsList() {
                   : ""
               }
             </div>
-            <div class="pattern-set-images">
-              ${imagesHtml}
-            </div>
+            ${previewHtml}
           </div>
         </div>
       `;

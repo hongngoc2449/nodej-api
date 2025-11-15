@@ -36,11 +36,15 @@ async function savePatternSetToServer(set) {
     const res = await fetch("/api/pattern-sets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: set.name, images: set.images || [] }),
+      body: JSON.stringify({ 
+        name: set.name, 
+        images: set.images || [],
+        previewImage: set.previewImage || null
+      }),
     });
     if (!res.ok) throw new Error("Save failed");
     const saved = await res.json();
-    return saved; // { id, name, source, images }
+    return saved; // { id, name, source, images, previewImage }
   } catch (err) {
     console.error("Error saving pattern set to server:", err);
     return null;
