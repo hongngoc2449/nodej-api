@@ -1,0 +1,158 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+.main-content {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.profile-container {
+  width: 100%;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.profile-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.profile-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 28px;
+}
+
+.profile-header p {
+  margin: 8px 0 0;
+  color: #6c757d;
+}
+
+.card {
+  border: 1px solid #e1e5e9;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+  color: #333;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.info-item {
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafbfc;
+}
+
+.info-item .label {
+  display: block;
+  color: #6c757d;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.api-controls {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.api-controls input {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  background: #f8f9fa;
+}
+
+.btn {
+  border: 1px solid #00a3f7;
+  background: #fff;
+  color: #00a3f7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: #00a3f7;
+  color: #fff;
+}
+
+.btn-warning {
+  border-color: #f59f00;
+  color: #f59f00;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.meta-item {
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafbfc;
+}
+
+.meta-item span {
+  display: block;
+  color: #6c757d;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.test-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.result-box {
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 140px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .api-controls {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,298 @@
+{
+    "product": {
+        "title": "Custom Baseball Baby Romper with Name & Number",
+        "body_html": "Imagine the joy of seeing your little one dressed in a romper that's as unique as their first smile. Our Custom Baseball Baby Romper lets you personalize with your baby's name and favorite number, creating a one-of-a-kind game day outfit. With its vibrant red stitching and bold text, this romper brings a playful sports vibe to any occasion. As you watch your baby wear this personalized piece, feel the pride swell knowing it's crafted just for them. Don't miss out on making game days and special events unforgettable; order your custom romper today and create memories that last a lifetime.\n<br/><br/>\n✅ Product details:<br/>\n- Soft and comfortable<br/>\n- Retail fit<br/>\n- Runs true to size<br/>\n- 95% cotton, 5% spandex.<br/>\n- Various print positions (Description Figure)<br/><br/>\n✅ CARE INSTRUCTIONS<br/>\n- Machine wash: warm (max 40C or 105F);<br/>\n- Non-chlorine: bleach as needed<br/>\n- Tumble dry: low heat<br/>\n- Iron, steam or dry: medium heat<br/>\n- Do not dry-clean.<br/><br/>\n✅ NOTE :<br/>\n- Please allow 0.3-0.5\" / 1-2 CM differs due to manual measurement.<br/>  \n- Please note that due to lighting effect and computer color, the actual color maybe slightly different from picture. Hope for your utmost understanding!<br/><br/>\n<br/><br/>\nThanks for visiting our shop! Enjoy your shopping day ❤️\n",
+        "vendor": "SoJau",
+        "handle": "custom-baseball-baby-romper-name-number",
+        "status": "active",
+        "tags": [
+            "baby romper",
+            "sports outfit",
+            "custom name",
+            "personalized baby gift",
+            "customizable romper",
+            "baseball baby shower gift",
+            "game day baby outfit",
+            "custom name romper",
+            "unique baby gift",
+            "personalized sportswear"
+        ],
+        "product_type": "Romper",
+        "published_scope": "global",
+        "options": [
+            {
+                "name": "SIZE",
+                "values": [
+                    "Romper Kid 0-3M",
+                    "Romper Kid 3-6M",
+                    "Romper Kid 6-12M",
+                    "Romper Kid 12-18M",
+                    "Romper Kid 18-24M"
+                ]
+            },
+            {
+                "name": "COLOR",
+                "values": [
+                    "Natural",
+                    "White",
+                    "Navy",
+                    "Light Mauve"
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "option1": "Romper Kid 0-3M",
+                "option2": "Natural",
+                "price": 19,
+                "compare_at_price": 28.5,
+                "sku": "NTR4 - 03",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 0-3M",
+                "option2": "White",
+                "price": 19,
+                "compare_at_price": 28.5,
+                "sku": "WTE4 - 03",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 0-3M",
+                "option2": "Navy",
+                "price": 19,
+                "compare_at_price": 28.5,
+                "sku": "NAV4 - 03",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 0-3M",
+                "option2": "Light Mauve",
+                "price": 19,
+                "compare_at_price": 28.5,
+                "sku": "LMV4 - 03",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 3-6M",
+                "option2": "Natural",
+                "price": 20,
+                "compare_at_price": 30.0,
+                "sku": "NTR4 - 36",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 3-6M",
+                "option2": "White",
+                "price": 20,
+                "compare_at_price": 30.0,
+                "sku": "WTE4 - 36",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 3-6M",
+                "option2": "Navy",
+                "price": 20,
+                "compare_at_price": 30.0,
+                "sku": "NAV4 - 36",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 3-6M",
+                "option2": "Light Mauve",
+                "price": 20,
+                "compare_at_price": 30.0,
+                "sku": "LMV4 - 36",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 6-12M",
+                "option2": "Natural",
+                "price": 21,
+                "compare_at_price": 31.5,
+                "sku": "NTR4 - 612",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 6-12M",
+                "option2": "White",
+                "price": 21,
+                "compare_at_price": 31.5,
+                "sku": "WTE4 - 612",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 6-12M",
+                "option2": "Navy",
+                "price": 21,
+                "compare_at_price": 31.5,
+                "sku": "NAV4 - 612",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 6-12M",
+                "option2": "Light Mauve",
+                "price": 21,
+                "compare_at_price": 31.5,
+                "sku": "LMV4 - 612",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 12-18M",
+                "option2": "Natural",
+                "price": 22,
+                "compare_at_price": 33.0,
+                "sku": "NTR4 - 1218",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 12-18M",
+                "option2": "White",
+                "price": 22,
+                "compare_at_price": 33.0,
+                "sku": "WTE4 - 1218",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 12-18M",
+                "option2": "Navy",
+                "price": 22,
+                "compare_at_price": 33.0,
+                "sku": "NAV4 - 1218",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 12-18M",
+                "option2": "Light Mauve",
+                "price": 22,
+                "compare_at_price": 33.0,
+                "sku": "LMV4 - 1218",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 18-24M",
+                "option2": "Natural",
+                "price": 23,
+                "compare_at_price": 34.5,
+                "sku": "NTR4 - 1824",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 18-24M",
+                "option2": "White",
+                "price": 23,
+                "compare_at_price": 34.5,
+                "sku": "WTE4 - 1824",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 18-24M",
+                "option2": "Navy",
+                "price": 23,
+                "compare_at_price": 34.5,
+                "sku": "NAV4 - 1824",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            },
+            {
+                "option1": "Romper Kid 18-24M",
+                "option2": "Light Mauve",
+                "price": 23,
+                "compare_at_price": 34.5,
+                "sku": "LMV4 - 1824",
+                "inventory_management": "shopify",
+                "inventory_policy": "deny",
+                "fulfillment_service": "manual",
+                "inventory_quantity": 100
+            }
+        ],
+        "metafields": [
+            {
+                "key": "personalization_message",
+                "value": "Please enter your baby&#39;s name and number here, thank you!\nExample: James/ 12",
+                "type": "multi_line_text_field",
+                "namespace": "custom"
+            },
+            {
+                "key": "product_video",
+                "value": "https://v.etsystatic.com/video/upload/ac_none,du_15,q_auto:good/0605_13_gnsgs5.mp4",
+                "type": "url",
+                "namespace": "custom"
+            },
+            {
+                "key": "product_video_thumbnail",
+                "value": "https://v.etsystatic.com/video/upload/ar_1:1,c_fill,h_105,q_auto,w_105/0605_13_gnsgs5.jpg",
+                "type": "url",
+                "namespace": "custom"
+            }
+        ]
+    },
+    "images": [
+        "https://i.etsystatic.com/48293058/r/il/ea9c3a/6018307630/il_fullxfull.6018307630_nhqt.jpg",
+        "https://i.etsystatic.com/48293058/r/il/bf2614/6066371783/il_fullxfull.6066371783_e74k.jpg",
+        "https://i.etsystatic.com/48293058/r/il/ecbff7/6066371809/il_fullxfull.6066371809_74w3.jpg",
+        "https://i.etsystatic.com/48293058/r/il/0af805/6066371463/il_fullxfull.6066371463_srhy.jpg",
+        "https://i.etsystatic.com/48293058/r/il/76dfb9/6066371823/il_fullxfull.6066371823_qo8a.jpg",
+        "https://i.etsystatic.com/48293058/r/il/8ad210/6018307208/il_fullxfull.6018307208_ca67.jpg",
+        "https://i.etsystatic.com/48293058/r/il/5162e5/6066372207/il_fullxfull.6066372207_mwxm.jpg",
+        "https://i.etsystatic.com/48293058/r/il/954c03/6018308572/il_fullxfull.6018308572_e1q8.jpg",
+        "https://i.etsystatic.com/48293058/r/il/03eab2/6018308602/il_fullxfull.6018308602_fo0e.jpg",
+        "https://i.etsystatic.com/48293058/r/il/924d89/6066372889/il_fullxfull.6066372889_6yn0.jpg"
+    ]
+}

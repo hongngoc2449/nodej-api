@@ -2,12 +2,49 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
+const crypto = require("crypto");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { User } = require("../model/user");
 const { shop } = require("../model/shop");
 const { Account } = require("../model/account");
 const { checkUserAccess, checkAuth } = require("../controller/checkUserAccess");
+const { authenticateApiKey } = require("../controller/apiKeyAuth");
 const config = require("../config");
+
+function parseQuotaValue(rawQuota) {
+  if (rawQuota === undefined || rawQuota === null || rawQuota === "") {
+    return { hasValue: false, value: 0 };
+  }
+
+  const quota = Number(rawQuota);
+  if (!Number.isFinite(quota) || quota < 0) {
+    return { hasValue: true, error: "Quota phải là số không âm." };
+  }
+
+  return { hasValue: true, value: quota };
+}
+
+function generateApiKey() {
+  return `owl_${crypto.randomBytes(24).toString("hex")}`;
+}
+
+function getTodayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getUserQuotaStats(user) {
+  const today = getTodayDateString();
+  const quota = Number(user?.quota || 0);
+  const usedToday = user?.apiQuotaDate === today ? Number(user?.dailyApiRequestCount || 0) : 0;
+  const remaining = Math.max(0, quota - usedToday);
+
+  return {
+    quota,
+    usedToday,
+    remaining,
+    quotaDate: today,
+  };
+}
 
 // Configure Passport Google Strategy
 if (config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET) {
@@ -65,6 +102,7 @@ if (config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET) {
               email: email,
               authMethod: "google",
               kind: "user",
+              quota: 0,
             });
             await user.save();
             return done(null, user);
@@ -114,14 +152,19 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ username, password });
 
     if (user) {
+      user.status = "active";
+      await user.save();
+
       // Destructure and assign user properties to session, excluding password
-      const { _id, username, kind, list_shop, platform } = user;
+      const { _id, username, kind, list_shop, platform, quota, status } = user;
       req.session.user = {
         id: _id, // Đảm bảo lưu _id vào session
         username,
         kind,
         list_shop,
         platform,
+        quota,
+        status,
       };
       req.session.loggedIn = true;
       console.log(req.session.user);
@@ -146,13 +189,23 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
+  const username = req.session?.user?.username;
+
   // Hủy session của người dùng
-  req.session.destroy((err) => {
+  req.session.destroy(async (err) => {
     if (err) {
       console.error("Error during session destroy:", err);
       return res
         .status(500)
         .json({ success: false, message: "Internal server error" });
+    }
+
+    if (username) {
+      try {
+        await User.updateOne({ username }, { $set: { status: "unactive" } });
+      } catch (updateError) {
+        console.error("Error updating user status on logout:", updateError);
+      }
     }
 
     // Xóa cookie phiên mặc định của express-session
@@ -174,9 +227,14 @@ router.get("/register", (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { username, password, confirmPassword } = req.body;
+  const { username, password, confirmPassword, quota } = req.body;
 
   try {
+    const parsedQuota = parseQuotaValue(quota);
+    if (parsedQuota.error) {
+      return res.status(400).json({ message: parsedQuota.error });
+    }
+
     // Kiểm tra mật khẩu khớp
     if (password !== confirmPassword) {
       return res.status(400).json({ message: "Mật khẩu không khớp." });
@@ -191,7 +249,11 @@ router.post("/register", async (req, res) => {
     }
 
     // Tạo người dùng mới
-    const newUser = new User({ username, password });
+    const newUser = new User({
+      username,
+      password,
+      quota: parsedQuota.value,
+    });
 
     // Lưu vào cơ sở dữ liệu
     await newUser.save();
@@ -239,13 +301,18 @@ router.get(
       }
 
       // Tạo session giống như đăng nhập thông thường
-      const { _id, username, kind, list_shop, platform } = user;
+      user.status = "active";
+      await user.save();
+
+      const { _id, username, kind, list_shop, platform, quota, status } = user;
       req.session.user = {
         id: _id,
         username,
         kind,
         list_shop,
         platform,
+        quota,
+        status,
       };
       req.session.loggedIn = true;
 
@@ -272,19 +339,44 @@ router.get(
 router.get("/get-users", async (req, res) => {
   try {
     const kind = req.query.kind;
-
     const username = req.query.username;
+    const quota = req.query.quota;
     console.log(kind);
 
-    let users;
+    const filter = {};
     if (kind) {
-      users = await User.find({ kind: kind }).select("-password");
-    } else if (username) {
-      users = await User.find({ username: username }).select("-password");
-    } else {
-      users = await User.find().select("-password"); // Get all users
+      filter.kind = kind;
     }
-    res.json({ users: users }); // Pass them to the view
+    if (username) {
+      filter.username = username;
+    }
+    if (quota !== undefined && quota !== "") {
+      const parsedQuota = parseQuotaValue(quota);
+      if (parsedQuota.error) {
+        return res.status(400).json({ message: parsedQuota.error });
+      }
+      filter.quota = parsedQuota.value;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const users = await User.find(filter).select("-password").lean();
+    const mappedUsers = users.map((item) => {
+      const totalQuota = Number(item.quota || 0);
+      const usedToday =
+        item.apiQuotaDate === today ? Number(item.dailyApiRequestCount || 0) : 0;
+      const quotaRemaining = Math.max(0, totalQuota - usedToday);
+
+      return {
+        ...item,
+        status: item.status || "unactive",
+        totalQuota,
+        usedToday,
+        quotaRemaining,
+      };
+    });
+
+    res.json({ users: mappedUsers }); // Pass them to the view
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -295,10 +387,7 @@ router.get("/user", checkUserAccess(["admin", "leader"]), async (req, res) => {
   try {
     if (req.session && req.session.loggedIn) {
       console.log("da login");
-      const username = req.session.user.username;
-      const user = await User.findOne({ username: username });
-
-      res.render("ds-user", {
+      res.render("users", {
         user: req.session.user,
         title: "Users",
         activePage: "user",
@@ -318,9 +407,19 @@ router.get(
   checkUserAccess(["admin", "leader"]),
   async (req, res) => {
     try {
+      const id = req.query.id;
       const username = req.query.username;
-      console.log(username);
-      await User.deleteOne({ username: username });
+
+      if (id) {
+        await User.deleteOne({ _id: id });
+      } else if (username) {
+        await User.deleteOne({ username: username });
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing user id or username" });
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error(error);
@@ -336,9 +435,45 @@ router.get(
     try {
       const kind = req.query.kind;
       const username = req.query.username;
+      const quota = req.query.quota;
+      const status = req.query.status;
       const user = await User.findOne({ username: username });
-      user.kind = kind;
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      if (kind !== undefined && kind !== "") {
+        user.kind = kind;
+      }
+
+      if (status !== undefined && status !== "") {
+        if (!["active", "unactive"].includes(status)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Status không hợp lệ" });
+        }
+        user.status = status;
+      }
+
+      if (quota !== undefined) {
+        const parsedQuota = parseQuotaValue(quota);
+        if (parsedQuota.error) {
+          return res.status(400).json({ success: false, message: parsedQuota.error });
+        }
+        if (parsedQuota.hasValue) {
+          user.quota = parsedQuota.value;
+        }
+      }
+
       await user.save();
+
+      if (req.session?.user?.username === user.username) {
+        req.session.user.kind = user.kind;
+        req.session.user.quota = user.quota;
+        req.session.user.status = user.status;
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error(error);
@@ -351,17 +486,14 @@ router.get(
 // #region PROFILE
 router.get("/profile", checkAuth, (req, res) => {
   try {
-    if (req.url.includes("&")) {
-      getOrder(req, res);
-    } else {
-      res.render("n_profile", {
-        user: req.session.user,
-        title: "Profile",
-        activePage: "profile",
-      });
-    }
+    res.render("profile", {
+      user: req.session.user,
+      title: "Profile",
+      activePage: "profile",
+    });
   } catch (error) {
-    next(error);
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
@@ -481,6 +613,178 @@ router.get("/order", checkAuth, (req, res) => {
   }
 });
 //#endregion
+
+// #region TIKTOK TRACK
+router.get("/tiktok-track", checkAuth, (req, res) => {
+  try {
+    res.render("tiktok-track", {
+      user: req.session.user,
+      title: "TikTok Track",
+      activePage: "tiktok-track",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+// #endregion
+
+// #region ETSY SHOP INFO
+router.get("/etsy-shop-info", checkAuth, (req, res) => {
+  try {
+    res.render("etsy-shop-info", {
+      user: req.session.user,
+      title: "Etsy Shop Info",
+      activePage: "etsy-shop-info",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+// #endregion
+
+// #region API KEY
+router.get("/api-key/me", checkAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.session.user.username });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const quotaStats = getUserQuotaStats(user);
+
+    res.json({
+      success: true,
+      apiKey: user.apiKey || "",
+      requestCount: user.apiRequestCount || 0,
+      dailyRequestCount: quotaStats.usedToday,
+      apiKeyCreatedAt: user.apiKeyCreatedAt,
+      lastApiRequestAt: user.lastApiRequestAt,
+      quota: quotaStats.quota,
+      quotaUsedToday: quotaStats.usedToday,
+      quotaRemaining: quotaStats.remaining,
+      quotaDate: quotaStats.quotaDate,
+    });
+  } catch (error) {
+    console.error("Error getting API key info:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.post("/api-key/generate", checkAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.session.user.username });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    let newApiKey = "";
+    let keyExists = true;
+
+    while (keyExists) {
+      newApiKey = generateApiKey();
+      const existed = await User.findOne({ apiKey: newApiKey }).select("_id");
+      keyExists = !!existed;
+    }
+
+    user.apiKey = newApiKey;
+    user.apiRequestCount = 0;
+    user.dailyApiRequestCount = 0;
+    user.apiQuotaDate = getTodayDateString();
+    user.apiKeyCreatedAt = new Date();
+    user.lastApiRequestAt = null;
+    await user.save();
+
+    const quotaStats = getUserQuotaStats(user);
+
+    res.json({
+      success: true,
+      apiKey: user.apiKey,
+      requestCount: user.apiRequestCount,
+      dailyRequestCount: quotaStats.usedToday,
+      apiKeyCreatedAt: user.apiKeyCreatedAt,
+      lastApiRequestAt: user.lastApiRequestAt,
+      quota: quotaStats.quota,
+      quotaUsedToday: quotaStats.usedToday,
+      quotaRemaining: quotaStats.remaining,
+      quotaDate: quotaStats.quotaDate,
+    });
+  } catch (error) {
+    console.error("Error generating API key:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/api/external/me", authenticateApiKey, async (req, res) => {
+  const user = req.apiUser;
+  const quotaStats = getUserQuotaStats(user);
+  res.json({
+    success: true,
+    user: {
+      id: user._id,
+      username: user.username,
+      kind: user.kind,
+      quota: user.quota,
+    },
+    requestCount: user.apiRequestCount,
+    dailyRequestCount: quotaStats.usedToday,
+    quotaRemaining: quotaStats.remaining,
+    lastApiRequestAt: user.lastApiRequestAt,
+  });
+});
+
+router.get("/api/external/request-stats", authenticateApiKey, async (req, res) => {
+  const user = req.apiUser;
+  const quotaStats = getUserQuotaStats(user);
+  res.json({
+    success: true,
+    username: user.username,
+    requestCount: user.apiRequestCount,
+    dailyRequestCount: quotaStats.usedToday,
+    quota: quotaStats.quota,
+    quotaRemaining: quotaStats.remaining,
+    quotaDate: quotaStats.quotaDate,
+    apiKeyCreatedAt: user.apiKeyCreatedAt,
+    lastApiRequestAt: user.lastApiRequestAt,
+  });
+});
+
+router.get("/api-key/quota", checkAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.session.user.username });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const quotaStats = getUserQuotaStats(user);
+    res.json({
+      success: true,
+      username: user.username,
+      quota: quotaStats.quota,
+      usedToday: quotaStats.usedToday,
+      remaining: quotaStats.remaining,
+      quotaDate: quotaStats.quotaDate,
+    });
+  } catch (error) {
+    console.error("Error getting quota info:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/api/external/quota", authenticateApiKey, async (req, res) => {
+  const user = req.apiUser;
+  const quotaStats = getUserQuotaStats(user);
+  res.json({
+    success: true,
+    username: user.username,
+    quota: quotaStats.quota,
+    usedToday: quotaStats.usedToday,
+    remaining: quotaStats.remaining,
+    quotaDate: quotaStats.quotaDate,
+  });
+});
+// #endregion
 
 // #region ACCOUNT API
 // API tạo mock account và shop

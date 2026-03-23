@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title || "Users" %></title>
+    <link rel="stylesheet" href="/css/users.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+
+    <div class="main-content">
+      <div class="users-container">
+        <div class="users-header">
+          <h1>Quản lý User</h1>
+          <p>Danh sách tài khoản và quota sử dụng trong ngày</p>
+        </div>
+
+        <div class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Tên</th>
+                <th>Mail</th>
+                <th>Status</th>
+                <th>Quyền</th>
+                <th>Quota còn lại</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function renderUsers(users) {
+        const tableBody = document.getElementById("usersTableBody");
+
+        if (!Array.isArray(users) || users.length === 0) {
+          tableBody.innerHTML =
+            '<tr><td colspan="7" class="empty">Không có dữ liệu user</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = users
+          .map((item, index) => {
+            const status = item.status || "unactive";
+            const statusClass = status === "active" ? "badge-active" : "badge-unactive";
+            const quotaRemaining = Number(item.quotaRemaining || 0);
+            const totalQuota = Number(item.totalQuota || item.quota || 0);
+
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(item.username)}</td>
+                <td>${escapeHtml(item.email || "-")}</td>
+                <td>
+                  <div class="status-select-wrap ${statusClass}">
+                    <select
+                      class="status-select ${statusClass}"
+                      data-current="${status}"
+                      onchange="updateUserStatus('${escapeHtml(item.username)}', this)"
+                    >
+                      <option value="active" ${status === "active" ? "selected" : ""}>active</option>
+                      <option value="unactive" ${status === "unactive" ? "selected" : ""}>unactive</option>
+                    </select>
+                    <i class="fas fa-chevron-down status-select-icon"></i>
+                  </div>
+                </td>
+                <td>
+                  <div class="kind-select-wrap kind-${escapeHtml(item.kind || "user")}" >
+                    <select
+                      class="kind-select"
+                      data-current="${escapeHtml(item.kind || "user")}"
+                      onchange="updateUserKind('${escapeHtml(item.username)}', this)"
+                    >
+                      <option value="user" ${(item.kind || "user") === "user" ? "selected" : ""}>user</option>
+                      <option value="seller" ${item.kind === "seller" ? "selected" : ""}>seller</option>
+                      <option value="leader" ${item.kind === "leader" ? "selected" : ""}>leader</option>
+                      <option value="admin" ${item.kind === "admin" ? "selected" : ""}>admin</option>
+                      <option value="designer" ${item.kind === "designer" ? "selected" : ""}>designer</option>
+                      <option value="designer online" ${item.kind === "designer online" ? "selected" : ""}>designer online</option>
+                    </select>
+                    <i class="fas fa-chevron-down kind-select-icon"></i>
+                  </div>
+                </td>
+                <td>
+                  <div class="quota-edit-wrap">
+                    <span class="quota-remaining-text">${quotaRemaining}/</span>
+                    <input
+                      id="quota-input-${escapeHtml(item._id)}"
+                      type="number"
+                      min="0"
+                      class="quota-input"
+                      value="${totalQuota}"
+                    />
+                    <button
+                      class="save-quota-btn"
+                      onclick="updateUserQuota('${escapeHtml(item.username)}', '${escapeHtml(
+                        item._id
+                      )}')"
+                    >
+                      Lưu
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <button class="delete-btn" onclick="deleteUser('${escapeHtml(
+                    item._id
+                  )}', '${escapeHtml(item.username)}')">Xóa</button>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadUsers() {
+        try {
+          const response = await fetch("/get-users");
+          const result = await response.json();
+          renderUsers(result.users || []);
+        } catch (error) {
+          console.error("Error loading users:", error);
+          const tableBody = document.getElementById("usersTableBody");
+          tableBody.innerHTML =
+            '<tr><td colspan="7" class="empty">Lỗi tải dữ liệu user</td></tr>';
+        }
+      }
+
+      function applyStatusColor(selectElement, status) {
+        const statusClass = status === "active" ? "badge-active" : "badge-unactive";
+        const wrap = selectElement.closest(".status-select-wrap");
+
+        selectElement.classList.remove("badge-active", "badge-unactive");
+        selectElement.classList.add(statusClass);
+
+        if (wrap) {
+          wrap.classList.remove("badge-active", "badge-unactive");
+          wrap.classList.add(statusClass);
+        }
+      }
+
+      async function updateUserStatus(username, selectElement) {
+        if (!username || !selectElement) return;
+
+        const newStatus = selectElement.value;
+        const previousStatus = selectElement.dataset.current || newStatus;
+
+        applyStatusColor(selectElement, newStatus);
+
+        try {
+          const response = await fetch(
+            `/user-update?username=${encodeURIComponent(username)}&status=${encodeURIComponent(
+              newStatus
+            )}`
+          );
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            selectElement.dataset.current = newStatus;
+          } else {
+            selectElement.value = previousStatus;
+            applyStatusColor(selectElement, previousStatus);
+            alert(result.message || "Không thể cập nhật status");
+          }
+        } catch (error) {
+          console.error("Update status error:", error);
+          selectElement.value = previousStatus;
+          applyStatusColor(selectElement, previousStatus);
+          alert("Lỗi khi cập nhật status");
+        }
+      }
+
+      function applyKindColor(selectElement, kind) {
+        const wrap = selectElement.closest(".kind-select-wrap");
+        if (!wrap) return;
+
+        wrap.className = `kind-select-wrap kind-${kind}`;
+      }
+
+      async function updateUserKind(username, selectElement) {
+        if (!username || !selectElement) return;
+
+        const newKind = selectElement.value;
+        const previousKind = selectElement.dataset.current || newKind;
+
+        applyKindColor(selectElement, newKind);
+
+        try {
+          const response = await fetch(
+            `/user-update?username=${encodeURIComponent(username)}&kind=${encodeURIComponent(
+              newKind
+            )}`
+          );
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            selectElement.dataset.current = newKind;
+          } else {
+            selectElement.value = previousKind;
+            applyKindColor(selectElement, previousKind);
+            alert(result.message || "Không thể cập nhật quyền");
+          }
+        } catch (error) {
+          console.error("Update kind error:", error);
+          selectElement.value = previousKind;
+          applyKindColor(selectElement, previousKind);
+          alert("Lỗi khi cập nhật quyền");
+        }
+      }
+
+      async function updateUserQuota(username, id) {
+        if (!username || !id) return;
+
+        const input = document.getElementById(`quota-input-${id}`);
+        if (!input) return;
+
+        const quotaValue = Number(input.value);
+        if (!Number.isFinite(quotaValue) || quotaValue < 0) {
+          alert("Quota phải là số không âm");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/user-update?username=${encodeURIComponent(username)}&quota=${encodeURIComponent(
+              quotaValue
+            )}`
+          );
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            await loadUsers();
+          } else {
+            alert(result.message || "Không thể cập nhật quota");
+          }
+        } catch (error) {
+          console.error("Update quota error:", error);
+          alert("Lỗi khi cập nhật quota");
+        }
+      }
+
+      async function deleteUser(id, username) {
+        if (!id) return;
+
+        const confirmed = confirm(
+          `Bạn có chắc muốn xóa user: ${username || id}?`
+        );
+        if (!confirmed) return;
+
+        try {
+          const response = await fetch(`/user-delete?id=${encodeURIComponent(id)}`);
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            await loadUsers();
+          } else {
+            alert(result.message || "Không thể xóa user");
+          }
+        } catch (error) {
+          console.error("Delete user error:", error);
+          alert("Lỗi khi xóa user");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadUsers);
+    </script>
+  </body>
+</html>

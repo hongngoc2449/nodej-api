@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title || "TikTok Track" %></title>
+    <link rel="stylesheet" href="/css/tiktok-track.css" />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+
+    <main class="main-content">
+      <div class="tiktok-track-page">
+        <header class="page-header">
+          <h1>TikTok Track (Tối giản)</h1>
+          <p>2 chức năng chính: Search Product và Detail → Get Token → Create Product Shopify</p>
+        </header>
+
+        <section class="panel">
+          <h2>1) Search Product (TikTok)</h2>
+          <form id="searchForm" class="form-grid">
+            <div class="field">
+              <label for="searchAppKey">appKey</label>
+              <input id="searchAppKey" name="appKey" required />
+            </div>
+            <div class="field">
+              <label for="searchAppSecret">appSecret</label>
+              <input id="searchAppSecret" name="appSecret" required />
+            </div>
+            <div class="field">
+              <label for="searchShopCipher">shopCipher</label>
+              <input id="searchShopCipher" name="shopCipher" required />
+            </div>
+            <div class="field">
+              <label for="searchAccessToken">accessToken</label>
+              <input id="searchAccessToken" name="accessToken" required />
+            </div>
+            <div class="field">
+              <label for="searchShopName">shopName (optional)</label>
+              <input id="searchShopName" name="shopName" placeholder="Baby%20Stafaz" />
+            </div>
+            <div class="field">
+              <label for="searchPageSize">page_size</label>
+              <input id="searchPageSize" name="page_size" type="number" min="1" max="100" value="20" />
+            </div>
+            <div class="form-actions">
+              <button type="submit">Search Product</button>
+            </div>
+          </form>
+          <p id="searchStatus" class="status"></p>
+          <pre id="searchResult" class="result"></pre>
+        </section>
+
+        <section class="panel">
+          <h2>2) Product Detail → Get Token → Create Product (Shopify)</h2>
+          <form id="pipelineForm" class="form-grid">
+            <div class="field">
+              <label for="detailProductId">productId (TikTok)</label>
+              <input id="detailProductId" name="productId" required />
+            </div>
+            <div class="field">
+              <label for="detailAppKey">appKey</label>
+              <input id="detailAppKey" name="appKey" required />
+            </div>
+            <div class="field">
+              <label for="detailAppSecret">appSecret</label>
+              <input id="detailAppSecret" name="appSecret" required />
+            </div>
+            <div class="field">
+              <label for="detailShopCipher">shopCipher</label>
+              <input id="detailShopCipher" name="shopCipher" required />
+            </div>
+            <div class="field">
+              <label for="detailAccessToken">accessToken (TikTok)</label>
+              <input id="detailAccessToken" name="accessToken" required />
+            </div>
+
+            <div class="field">
+              <label for="shopifyShop">shop (Shopify)</label>
+              <input id="shopifyShop" name="shop" placeholder="your-shop" required />
+            </div>
+            <div class="field">
+              <label for="grantType">grant_type</label>
+              <input id="grantType" name="grant_type" value="client_credentials" required />
+            </div>
+            <div class="field">
+              <label for="clientId">client_id</label>
+              <input id="clientId" name="client_id" required />
+            </div>
+            <div class="field">
+              <label for="clientSecret">client_secret</label>
+              <input id="clientSecret" name="client_secret" required />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit">Run Pipeline</button>
+            </div>
+          </form>
+
+          <ol id="pipelineSteps" class="steps"></ol>
+          <pre id="pipelineResult" class="result"></pre>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      function setStatus(el, message, type) {
+        el.className = `status ${type || ''}`.trim();
+        el.textContent = message || '';
+      }
+
+      function setResult(el, payload) {
+        el.textContent = JSON.stringify(payload, null, 2);
+      }
+
+      function appendStep(listEl, message, type) {
+        const li = document.createElement('li');
+        li.className = type || '';
+        li.textContent = message;
+        listEl.appendChild(li);
+      }
+
+      async function parseJsonResponse(res) {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          const error = new Error(data.error || data.details || `HTTP ${res.status}`);
+          error.payload = data;
+          throw error;
+        }
+        return data;
+      }
+
+      document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const statusEl = document.getElementById('searchStatus');
+        const resultEl = document.getElementById('searchResult');
+
+        const formData = new FormData(e.currentTarget);
+        const params = new URLSearchParams({
+          appKey: String(formData.get('appKey') || '').trim(),
+          appSecret: String(formData.get('appSecret') || '').trim(),
+          shopCipher: String(formData.get('shopCipher') || '').trim(),
+          accessToken: String(formData.get('accessToken') || '').trim(),
+          page_size: String(formData.get('page_size') || '20').trim(),
+        });
+
+        const shopName = String(formData.get('shopName') || '').trim();
+        if (shopName) params.append('shopName', shopName);
+
+        setStatus(statusEl, 'Đang search product...', 'loading');
+        setResult(resultEl, { loading: true });
+
+        try {
+          const response = await fetch(`/tiktok-track/search-product?${params.toString()}`);
+          const data = await parseJsonResponse(response);
+          setStatus(statusEl, 'Search product thành công', 'success');
+          setResult(resultEl, data);
+        } catch (error) {
+          setStatus(statusEl, `Lỗi: ${error.message}`, 'error');
+          setResult(resultEl, { success: false, error: error.message });
+        }
+      });
+
+      document.getElementById('pipelineForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const stepsEl = document.getElementById('pipelineSteps');
+        const resultEl = document.getElementById('pipelineResult');
+        stepsEl.innerHTML = '';
+        setResult(resultEl, { loading: true });
+
+        const formData = new FormData(e.currentTarget);
+
+        const productId = String(formData.get('productId') || '').trim();
+        const appKey = String(formData.get('appKey') || '').trim();
+        const appSecret = String(formData.get('appSecret') || '').trim();
+        const shopCipher = String(formData.get('shopCipher') || '').trim();
+        const accessToken = String(formData.get('accessToken') || '').trim();
+
+        const shop = String(formData.get('shop') || '').trim();
+        const grantType = String(formData.get('grant_type') || 'client_credentials').trim();
+        const clientId = String(formData.get('client_id') || '').trim();
+        const clientSecret = String(formData.get('client_secret') || '').trim();
+
+        try {
+          appendStep(stepsEl, 'B1: Gọi Product Detail từ TikTok...', 'loading');
+          const detailParams = new URLSearchParams({
+            product_id: productId,
+            appKey,
+            appSecret,
+            shopCipher,
+            accessToken,
+          });
+          const detailRes = await fetch(`/tiktok-track/product-detail?${detailParams.toString()}`);
+          const detailData = await parseJsonResponse(detailRes);
+          const mappedData = detailData.mapped_data;
+
+          if (!mappedData || !mappedData.product) {
+            throw new Error('Không có mapped_data từ product detail');
+          }
+          appendStep(stepsEl, 'B1: Thành công', 'success');
+
+          appendStep(stepsEl, 'B2: Gọi Get Token Shopify...', 'loading');
+          const tokenRes = await fetch('/shopify/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shop,
+              grant_type: grantType,
+              client_id: clientId,
+              client_secret: clientSecret,
+            }),
+          });
+          const tokenData = await parseJsonResponse(tokenRes);
+          const shopifyAccessToken =
+            tokenData?.data?.access_token || tokenData?.access_token || '';
+
+          if (!shopifyAccessToken) {
+            throw new Error('Không lấy được access token từ API get token');
+          }
+          appendStep(stepsEl, 'B2: Thành công', 'success');
+
+          appendStep(stepsEl, 'B3: Gọi Create Product Shopify...', 'loading');
+          const createPayload = {
+            ...mappedData,
+            shop,
+            access_token: shopifyAccessToken,
+          };
+          const createRes = await fetch('/shopify/product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(createPayload),
+          });
+          const createData = await parseJsonResponse(createRes);
+          appendStep(stepsEl, 'B3: Thành công', 'success');
+
+          setResult(resultEl, {
+            success: true,
+            detailData,
+            tokenData,
+            createData,
+          });
+        } catch (error) {
+          appendStep(stepsEl, `Thất bại: ${error.message}`, 'error');
+          setResult(resultEl, {
+            success: false,
+            error: error.message,
+            details: error.payload || null,
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

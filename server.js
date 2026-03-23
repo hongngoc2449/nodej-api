@@ -10,6 +10,8 @@ const router = require("./routes/r_tiktok_new");
 const r_lark = require("./routes/r_lark");
 const r_user = require("./routes/r_user");
 const r_patterns = require("./routes/r_patterns");
+const r_shopify = require("./routes/r_shopify");
+const etsyShopInfoRouter = require("./routes/r_etsy");
 
 const app = express();
 const PORT = config.PORT;
@@ -32,7 +34,12 @@ if (process.env.MONGODB_URI) {
     .connect(process.env.MONGODB_URI, {
       dbName: process.env.MONGODB_DB || undefined,
     })
-    .then(() => console.log("✅ Connected to MongoDB"))
+    .then(() => {
+      console.log("✅ Connected to MongoDB");
+      if (typeof etsyShopInfoRouter.startEtsyAutoTracking === "function") {
+        etsyShopInfoRouter.startEtsyAutoTracking();
+      }
+    })
     .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 }
 
@@ -64,6 +71,8 @@ app.use(router);
 app.use(r_lark);
 app.use(r_patterns);
 app.use(r_user);
+app.use(r_shopify);
+app.use(etsyShopInfoRouter);
 
 // Pattern UI
 app.get("/pattern", checkAuth, async (req, res) => {
@@ -118,8 +127,12 @@ app.get("/api/info", (req, res) => {
       "GET /ship-label": "Lấy URL shipping documents từ package ID",
       "POST /mark-package-as-shipped":
         "Đánh dấu package là đã gửi (seller fulfill)",
+      "GET /product-search": "Search products TikTok Shop",
+      "GET /product-detail": "Lấy chi tiết product TikTok Shop",
       "GET /lark/ping": "Kiểm tra tình trạng Lark route",
       "POST /lark/send": "Gửi tin nhắn văn bản qua Lark",
+      "POST /shopify/token": "Lấy Shopify access token",
+      "POST /shopify/product": "Tạo sản phẩm Shopify bằng GraphQL",
     },
   });
 });
@@ -191,14 +204,18 @@ app.use("*", (req, res) => {
     available: [
       "POST /generate-image",
       "GET /order-detail",
-      "POST /order-list",
+      "GET /order-list",
       "GET /finance-statements",
       "GET /order-tracking",
       "POST /create-package",
       "GET /ship-label",
       "POST /mark-package-as-shipped",
+      "GET /product-search",
+      "GET /product-detail",
       "GET /lark/ping",
       "POST /lark/send",
+      "POST /shopify/token",
+      "POST /shopify/product",
     ],
   });
 });
@@ -207,6 +224,6 @@ app.use("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
   console.log(
-    `📝 API endpoints: POST /generate-image, GET /order-detail, POST /order-list, GET /finance-statements, GET /order-tracking, POST /create-package, GET /ship-label, POST /mark-package-as-shipped, GET /lark/ping, POST /lark/send`
+    `📝 API endpoints: POST /generate-image, GET /order-detail, POST /order-list, GET /finance-statements, GET /order-tracking, POST /create-package, GET /ship-label, POST /mark-package-as-shipped, GET /lark/ping, POST /lark/send, POST /shopify/token, POST /shopify/product`
   );
 });

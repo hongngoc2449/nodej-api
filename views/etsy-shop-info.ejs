@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title || "Etsy Tracker" %></title>
+    <link rel="stylesheet" href="/css/etsy-shop-info.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="controls-container">
+        <div class="title-row">
+          <h1 class="page-title">Etsy Tracker</h1>
+          <form id="formAddShop" class="inline-add-form" aria-label="Thêm shop">
+            <input
+              id="shopNameInput"
+              name="shopName"
+              type="text"
+              class="inline-add-input"
+              placeholder="VD: ROMYCouture, VintageVibesStoreVN, KiyokoStore"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn-primary btn-icon" id="btnAddShop" aria-label="Thêm shop">
+              <i class="fas fa-plus"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="result-container" aria-live="polite">
+        <div class="table-responsive" id="resultTableWrapper">
+          <table class="etsy-table" id="resultTable">
+            <thead>
+              <tr>
+                <th class="shop-name-col">Shop Name</th>
+                <th class="shop-icon-col">Icon</th>
+                <th>ID</th>
+                <th>Sales</th>
+                <th>Reviews</th>
+                <th>Favorites</th>
+                <th>Listing</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="resultTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="alert" id="errorAlert" style="display: none">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="errorMessage"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay" style="display: none">
+      <div class="spinner"></div>
+      <p>Đang gọi Etsy API...</p>
+    </div>
+
+    <script>
+      const stateChip = document.getElementById('stateChip');
+      const asOfWrapper = document.getElementById('asOfWrapper');
+      const asOf = document.getElementById('asOf');
+      const resultTableWrapper = document.getElementById('resultTableWrapper');
+      const resultTableBody = document.getElementById('resultTableBody');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const errorAlert = document.getElementById('errorAlert');
+      const errorMessage = document.getElementById('errorMessage');
+
+      async function loadSavedShopsFromMongo() {
+        try {
+          const res = await fetch('/etsy/shops');
+          const payload = await res.json();
+          if (!res.ok || payload.success === false) return;
+
+          const savedItems = Array.isArray(payload.data) ? payload.data : [];
+
+          renderSavedResults(savedItems);
+        } catch (e) {}
+      }
+
+      function renderSavedResults(items) {
+        if (!Array.isArray(items) || items.length === 0) return;
+        resultTableBody.innerHTML = '';
+        for (const item of items) {
+          const key = item.shop_id || item.shop_name || `shop-${Date.now()}`;
+          const html = buildRowHtml(item, key);
+          resultTableBody.insertAdjacentHTML('beforeend', html);
+        }
+      }
+
+      function setLoading(isLoading) {
+        loadingOverlay.style.display = isLoading ? 'flex' : 'none';
+      }
+
+      function setState(text, tone) {
+        if (!stateChip) return;
+        stateChip.innerHTML = `<span class="dot ${tone === 'ok' ? 'dot-success' : tone === 'warn' ? 'dot-warn' : 'dot-muted'}"></span>${text}`;
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorAlert.style.display = 'flex';
+        setState('Lỗi khi gọi API', 'warn');
+      }
+
+      function clearError() {
+        errorAlert.style.display = 'none';
+        errorMessage.textContent = '';
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined) return '-';
+        return Number(value).toLocaleString('vi-VN');
+      }
+
+      function renderResult(data) {
+        if (!data) return;
+        const key = data.shop_id || data.shop_name || `shop-${Date.now()}`;
+        removeExistingRow(key);
+        const html = buildRowHtml(data, key);
+        resultTableBody.insertAdjacentHTML('afterbegin', html);
+        if (asOfWrapper) asOfWrapper.style.display = 'inline-flex';
+        if (asOf) asOf.textContent = new Date().toLocaleString('vi-VN');
+        setState('Đã thêm kết quả', 'ok');
+      }
+
+      function buildRowHtml(data, key) {
+        const created = data.created_timestamp
+          ? new Date(data.created_timestamp * 1000).toLocaleDateString('vi-VN')
+          : '-';
+        const delta = data.delta || {};
+        const shopUrl = data.url || '#';
+        const shopNameText = escapeHtml(data.shop_name || '-');
+        const shopNameHtml = shopUrl !== '#'
+          ? `<a href="${shopUrl}" target="_blank" rel="noopener noreferrer">${shopNameText}</a>`
+          : shopNameText;
+        const shopIcon = data.icon_url_fullxfull
+          ? `<img src="${escapeHtml(data.icon_url_fullxfull)}" alt="${escapeHtml(data.shop_name || 'shop')}" class="shop-icon" loading="lazy" referrerpolicy="no-referrer" />`
+          : '';
+        const deleteBtn = data.shop_id
+          ? `<button type="button" class="btn-delete-shop" data-shop-id="${escapeHtml(data.shop_id)}" data-shop-name="${escapeHtml(data.shop_name || '')}">Xóa</button>`
+          : '-';
+        return `
+          <tr data-shop-key="${escapeHtml(key)}">
+            <td class="shop-name-col">${shopNameHtml}</td>
+            <td class="shop-icon-col">${shopIcon || '-'}</td>
+            <td>${data.shop_id ? escapeHtml(data.shop_id) : '-'}</td>
+            <td>${formatNumber(data.transaction_sold_count)}<br>${renderDelta(delta, 'transaction_sold_count')}</td>
+            <td>${formatNumber(data.review_count)}<br>${renderDelta(delta, 'review_count')}</td>
+            <td>${formatNumber(data.num_favorers)}<br>${renderDelta(delta, 'num_favorers')}</td>
+            <td>${formatNumber(data.listing_active_count)}</td>
+            <td>${created}</td>
+            <td>${deleteBtn}</td>
+          </tr>
+        `;
+      }
+
+      function renderDelta(deltaObj, field) {
+        if (!deltaObj || deltaObj[field] === null || deltaObj[field] === undefined) {
+          return `<span class="stat-delta stat-delta-neutral">(n/a)</span>`;
+        }
+        const value = deltaObj[field];
+        const sign = value > 0 ? '+' : value < 0 ? '' : '';
+        const clazz = value > 0 ? 'stat-delta-up' : value < 0 ? 'stat-delta-down' : 'stat-delta-neutral';
+        return `<span class="stat-delta ${clazz}">${sign}${formatNumber(value)}</span>`;
+      }
+
+      function removeExistingRow(key) {
+        const existed = resultTableBody.querySelector(`[data-shop-key="${CSS.escape(key)}"]`);
+        if (existed) existed.remove();
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      async function performShopFetch(url) {
+        try {
+          const res = await fetch(url);
+          const payload = await res.json();
+          if (!res.ok || payload.success === false) {
+            throw new Error(payload.error || 'Không thể lấy dữ liệu');
+          }
+          renderResult(payload.data);
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err.message || 'Có lỗi xảy ra' };
+        }
+      }
+
+      function parseShopNames(rawInput) {
+        return Array.from(
+          new Set(
+            String(rawInput || '')
+              .split(',')
+              .map((item) => item.trim())
+              .filter(Boolean)
+          )
+        );
+      }
+
+      async function fetchMultipleShops(shopNames) {
+        if (!Array.isArray(shopNames) || shopNames.length === 0) return;
+
+        clearError();
+        setLoading(true);
+        setState(`Đang gọi Etsy API cho ${shopNames.length} shop...`, 'muted');
+
+        const failedShops = [];
+        let successCount = 0;
+
+        try {
+          for (const shopName of shopNames) {
+            const result = await performShopFetch(`/etsy/shop-search/${encodeURIComponent(shopName)}`);
+            if (result.ok) {
+              successCount += 1;
+              continue;
+            }
+            failedShops.push({ shopName, error: result.error || 'Không thể lấy dữ liệu' });
+          }
+
+          if (successCount > 0) {
+            setState(`Đã thêm ${successCount}/${shopNames.length} shop`, failedShops.length ? 'warn' : 'ok');
+          }
+
+          if (failedShops.length) {
+            const failedNames = failedShops.map((item) => item.shopName).join(', ');
+            showError(`Không thể lấy dữ liệu cho: ${failedNames}`);
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function deleteShop(shopId, shopName, rowEl) {
+        if (!shopId) return;
+        const confirmed = confirm(`Xóa shop ${shopName || shopId}?`);
+        if (!confirmed) return;
+
+        clearError();
+        try {
+          const res = await fetch(`/etsy/shop/${encodeURIComponent(shopId)}`, { method: 'DELETE' });
+          const payload = await res.json();
+          if (!res.ok || payload.success === false) {
+            throw new Error(payload.error || 'Không thể xóa shop');
+          }
+
+          if (rowEl) rowEl.remove();
+
+          if (resultTableBody.childElementCount === 0) {
+            resultTableBody.innerHTML = '';
+          }
+        } catch (err) {
+          showError(err.message || 'Có lỗi xảy ra');
+        }
+      }
+
+      document.getElementById('formAddShop').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const inputEl = document.getElementById('shopNameInput');
+        const shopNames = parseShopNames(inputEl.value);
+        if (!shopNames.length) return;
+
+        await fetchMultipleShops(shopNames);
+
+        inputEl.value = '';
+        inputEl.focus();
+      });
+
+      resultTableBody.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-delete-shop');
+        if (!btn) return;
+        const rowEl = btn.closest('tr');
+        const shopId = btn.getAttribute('data-shop-id');
+        const shopName = btn.getAttribute('data-shop-name');
+        deleteShop(shopId, shopName, rowEl);
+      });
+
+      loadSavedShopsFromMongo();
+
+    </script>
+  </body>
+</html>

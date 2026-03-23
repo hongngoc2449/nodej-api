@@ -48,6 +48,8 @@
     background-color: #ffffff;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .sidebar .nav-link {
@@ -108,6 +110,10 @@
     border-top: 1px solid #dee2e6;
     text-align: center;
     margin-top: auto; /* Ensures the user-info div stays at the bottom */
+    position: sticky;
+    bottom: 0;
+    background-color: #ffffff;
+    z-index: 2;
   }
 
   .sidebar .user-info .user-avatar {
@@ -499,10 +505,22 @@
       ><i class="fas fa-store"></i> Shop</a
     >
     <a
+      href="/etsy-shop-info"
+      class="nav-link <%= activePage === 'etsy-shop-info' ? 'active' : '' %>"
+      data-page="etsy-shop-info"
+      ><i class="fab fa-etsy"></i> Etsy Tracker</a
+    >
+    <a
       href="/order"
       class="nav-link <%= activePage === 'order' ? 'active' : '' %>"
       data-page="order"
       ><i class="fas fa-shopping-bag"></i> Order</a
+    >
+    <a
+      href="/tiktok-track"
+      class="nav-link <%= activePage === 'tiktok-track' ? 'active' : '' %>"
+      data-page="tiktok-track"
+      ><i class="fab fa-tiktok"></i> Tiktok Track</a
     >
     <% if (!user.kind.includes("user") ) { %>
     <!--  -->

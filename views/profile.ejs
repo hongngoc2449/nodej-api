@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title || "Profile" %></title>
+    <link rel="stylesheet" href="/css/profile.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <%- include('./im/sidebar') %>
+    <div class="main-content">
+      <div class="profile-container">
+        <div class="profile-header">
+          <h1>Profile</h1>
+          <p>Quản lý API key và quota request proxy theo ngày</p>
+        </div>
+
+        <div class="card">
+          <h2>Thông tin tài khoản</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Username</span>
+              <strong id="usernameValue"><%= user.username %></strong>
+            </div>
+            <div class="info-item">
+              <span class="label">Role</span>
+              <strong id="roleValue"><%= user.kind %></strong>
+            </div>
+            <div class="info-item">
+              <span class="label">Quota / ngày</span>
+              <strong id="quotaValue">-</strong>
+            </div>
+            <div class="info-item">
+              <span class="label">Đã dùng hôm nay</span>
+              <strong id="usedTodayValue">-</strong>
+            </div>
+            <div class="info-item">
+              <span class="label">Còn lại hôm nay</span>
+              <strong id="remainingValue">-</strong>
+            </div>
+            <div class="info-item">
+              <span class="label">Ngày quota</span>
+              <strong id="quotaDateValue">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>API Key</h2>
+          <div class="api-controls">
+            <input
+              id="apiKeyInput"
+              type="text"
+              readonly
+              placeholder="Chưa có API key, bấm Generate để tạo"
+            />
+            <button id="generateApiKeyBtn" class="btn btn-primary">
+              Generate API Key
+            </button>
+            <button id="copyApiKeyBtn" class="btn" disabled>Copy</button>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span>Total proxy requests</span>
+              <strong id="apiRequestCount">0</strong>
+            </div>
+            <div class="meta-item">
+              <span>API key created</span>
+              <strong id="apiKeyCreatedAt">-</strong>
+            </div>
+            <div class="meta-item">
+              <span>Last proxy request</span>
+              <strong id="apiLastRequestAt">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Get quota còn lại</h2>
+          <div class="test-controls">
+            <button id="getRemainingQuotaBtn" class="btn btn-primary">
+              Lấy quota còn lại
+            </button>
+          </div>
+          <pre id="quotaResult" class="result-box">Chưa có dữ liệu.</pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function formatDateTime(value) {
+        if (!value) return "-";
+        return new Date(value).toLocaleString("vi-VN");
+      }
+
+      function updateQuotaView(data) {
+        document.getElementById("quotaValue").textContent = data?.quota ?? 0;
+        document.getElementById("usedTodayValue").textContent = data?.usedToday ?? 0;
+        document.getElementById("remainingValue").textContent = data?.remaining ?? 0;
+        document.getElementById("quotaDateValue").textContent = data?.quotaDate || "-";
+      }
+
+      function updateApiView(data) {
+        const apiKey = data?.apiKey || "";
+
+        document.getElementById("apiKeyInput").value = apiKey;
+        document.getElementById("apiRequestCount").textContent = data?.requestCount ?? 0;
+        document.getElementById("apiKeyCreatedAt").textContent = formatDateTime(
+          data?.apiKeyCreatedAt
+        );
+        document.getElementById("apiLastRequestAt").textContent = formatDateTime(
+          data?.lastApiRequestAt
+        );
+
+        document.getElementById("copyApiKeyBtn").disabled = !apiKey;
+        updateQuotaView({
+          quota: data?.quota,
+          usedToday: data?.quotaUsedToday,
+          remaining: data?.quotaRemaining,
+          quotaDate: data?.quotaDate,
+        });
+      }
+
+      function setQuotaResult(data) {
+        document.getElementById("quotaResult").textContent =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      }
+
+      async function loadApiInfo() {
+        const response = await fetch("/api-key/me");
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Không thể tải API info");
+        }
+
+        updateApiView(result);
+      }
+
+      async function loadQuotaInfo() {
+        const response = await fetch("/api-key/quota");
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Không thể tải quota");
+        }
+
+        updateQuotaView(result);
+        return result;
+      }
+
+      async function generateApiKey() {
+        const button = document.getElementById("generateApiKeyBtn");
+        button.disabled = true;
+        button.textContent = "Generating...";
+
+        try {
+          const response = await fetch("/api-key/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || "Không thể tạo API key");
+          }
+
+          updateApiView(result);
+          setQuotaResult("Đã tạo API key thành công.");
+        } catch (error) {
+          setQuotaResult("Lỗi generate key: " + error.message);
+        } finally {
+          button.disabled = false;
+          button.textContent = "Generate API Key";
+        }
+      }
+
+      async function copyApiKey() {
+        const apiKey = document.getElementById("apiKeyInput").value;
+        if (!apiKey) return;
+
+        try {
+          await navigator.clipboard.writeText(apiKey);
+          setQuotaResult("Đã copy API key vào clipboard.");
+        } catch (error) {
+          setQuotaResult("Không thể copy API key.");
+        }
+      }
+
+      async function getRemainingQuota() {
+        try {
+          const response = await fetch("/api-key/quota");
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || "Không thể lấy quota còn lại");
+          }
+
+          setQuotaResult({
+            username: result.username,
+            remaining: result.remaining,
+            quota: result.quota,
+            usedToday: result.usedToday,
+            quotaDate: result.quotaDate,
+          });
+
+          if (result.success) {
+            updateQuotaView(result);
+          }
+        } catch (error) {
+          setQuotaResult("Lỗi lấy quota còn lại: " + error.message);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          await loadApiInfo();
+          await loadQuotaInfo();
+        } catch (error) {
+          setQuotaResult("Lỗi tải dữ liệu ban đầu: " + error.message);
+        }
+
+        document
+          .getElementById("generateApiKeyBtn")
+          .addEventListener("click", generateApiKey);
+        document
+          .getElementById("copyApiKeyBtn")
+          .addEventListener("click", copyApiKey);
+        document
+          .getElementById("getRemainingQuotaBtn")
+          .addEventListener("click", getRemainingQuota);
+      });
+    </script>
+  </body>
+</html>
